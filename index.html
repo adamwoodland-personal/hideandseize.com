@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#121821">
+<title>Hide &amp; Seize: turn-based capture the flag in your browser</title>
+<meta name="description" content="A free turn-based stealth game of capture the flag against the computer. Hide in the long grass, steal Red's flag and get it home. Make your own maps too.">
+<link rel="canonical" href="https://hideandseize.com/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://hideandseize.com/">
+<meta property="og:site_name" content="Hide &amp; Seize">
+<meta property="og:title" content="Hide &amp; Seize: sneak in, steal their flag, bring it home">
+<meta property="og:description" content="Sneak into Red's half, hide in the long grass, steal their flag and get it home before they take yours. A free turn-based capture the flag game against the computer.">
+<meta property="og:image" content="https://hideandseize.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A Hide &amp; Seize field from above: Blue's Runner gets away with Red's flag past Red's two Guards, while a Blue Shadow hides in the woods beside Red's Hunter">
+<meta property="og:locale" content="en_GB">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Hide &amp; Seize: sneak in, steal their flag, bring it home">
+<meta name="twitter:description" content="Sneak into Red's half, hide in the long grass, steal their flag and get it home before they take yours. A free turn-based capture the flag game against the computer.">
+<meta name="twitter:image" content="https://hideandseize.com/og-image.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="app.js"></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "WebSite",
+   "@id": "https://hideandseize.com/#website",
+   "name": "Hide & Seize",
+   "url": "https://hideandseize.com/",
+   "inLanguage": "en",
+   "publisher": {
+    "@id": "https://adamwoodland.com/#person"
+   }
+  },
+  {
+   "@type": "VideoGame",
+   "@id": "https://hideandseize.com/#game",
+   "name": "Hide & Seize",
+   "url": "https://hideandseize.com/",
+   "description": "A turn-based stealth game of capture the flag, played in the browser against the computer. Each side has eight players with their own speed, sight, stealth and strength; you start knowing only your own half of the field, see Red's players only while one of yours can, and win by bringing Red's flag home three times. A map editor makes new fields of any size.",
+   "genre": [
+    "Strategy",
+    "Turn-based strategy",
+    "Stealth",
+    "Capture the flag"
+   ],
+   "playMode": "SinglePlayer",
+   "numberOfPlayers": {
+    "@type": "QuantitativeValue",
+    "value": 1
+   },
+   "gamePlatform": "Web browser",
+   "applicationCategory": "GameApplication",
+   "applicationSubCategory": "Strategy game",
+   "operatingSystem": "Any (made for a computer with a mouse and keyboard)",
+   "browserRequirements": "Requires JavaScript",
+   "inLanguage": "en",
+   "isAccessibleForFree": true,
+   "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+   },
+   "image": "https://hideandseize.com/og-image.png",
+   "screenshot": "https://hideandseize.com/og-image.png",
+   "featureList": [
+    "Turn-based capture the flag against the computer, first to 3 points",
+    "Eight players a side: Scouts, Runners, Shadows, Hunters and Guards, each with their own speed, sight, stealth and strength",
+    "Only your own half of the field is known at the start, and Red's players show only while one of yours can see them",
+    "Sneak and hide for cover, at a cost to movement; woods and long grass hide you too",
+    "Tackles succeed by chance, and a player who dodges one is winded for the rest of the turn",
+    "Five built-in maps, shuffled a little every game, and a map editor for new ones from 11 × 15 to 45 × 61 squares",
+    "Two computer levels, Easy and Normal; the game is saved in the browser as you play"
+   ],
+   "isPartOf": {
+    "@id": "https://hideandseize.com/#website"
+   },
+   "author": {
+    "@id": "https://adamwoodland.com/#person"
+   }
+  },
+  {
+   "@type": "Person",
+   "@id": "https://adamwoodland.com/#person",
+   "name": "Adam Woodland",
+   "url": "https://adamwoodland.com/"
+  }
+ ]
+}
+</script>
+<script type="application/ld+json" id="faqLd">
+{
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "mainEntity": [
+  {
+   "@type": "Question",
+   "name": "What is Hide & Seize?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Hide & Seize is a free turn-based stealth game of capture the flag, played in your browser against the computer. You lead Blue's eight players, a Scout, two Runners, a Shadow, two Hunters and two Guards, against Red's eight: scout the far side, hide in the long grass and the woods, tackle whoever is carrying your flag, and get Red's flag back to your base."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How do you win?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Bring Red's flag back to your base, the squares round your own flag, three times before Red does the same to you. You can't score while Red has your flag, so get it back first: tackle whoever is carrying it and it goes straight home."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Does the computer cheat?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "It sees your players only through its own, just as you see Red's, and it remembers where it last saw them. It does know the ground on both halves from the start, while you have to explore Red's half. There are two levels, Easy and Normal."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can I make my own maps?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. The map editor (under New game) paints the ground, your flag and your starting players on your half, and Red's half follows, turned round, so the two sides always match. A map can be 11 to 45 squares wide and 15 to 61 long, with 1 to 12 players a side. Your maps are kept in your browser and can be played straight away. Export one as a file to share it, or send it to adam@hideandseize.com to have it added to the game for everyone."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Is it free? Do I need an account?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "It's free, with no account, no ads and no cookies. Your game is saved in this browser as you play, so you can close the page and carry on later."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can I play it on a phone or tablet?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "It's made for a computer with a mouse or trackpad and a keyboard. It works on a phone or tablet, but the squares are small, so a big screen is best."
+   }
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<header class="top">
+	<h1><span class="b">Hide</span> &amp; <span class="r">Seize</span></h1>
+	<div class="score" aria-live="polite" aria-label="Score">
+		<span class="pill blue" id="pillBlue"><span class="flagIco" id="flagBlue"></span><b id="scoreBlue">0</b></span>
+		<span class="to">to</span>
+		<span class="pill red" id="pillRed"><b id="scoreRed">0</b><span class="flagIco" id="flagRed"></span></span>
+	</div>
+	<nav class="actions">
+		<button id="helpBtn" class="icon" type="button" aria-label="How to play" title="How to play">?</button>
+		<button id="newBtn" class="ghost" type="button"><span class="long">New game</span><span class="short">New</span></button>
+	</nav>
+</header>
+
+<main>
+	<section id="boardWrap" aria-label="The field">
+		<canvas id="board" tabindex="0" aria-label="The field. Use the panel or the number keys to pick a player."></canvas>
+		<div class="zoom" role="group" aria-label="Zoom">
+			<button id="zoomOut" type="button" class="icon" aria-label="Zoom out" title="Zoom out (−)">−</button>
+			<button id="zoomFit" type="button" title="Show the whole field (0)">Fit</button>
+			<button id="zoomIn" type="button" class="icon" aria-label="Zoom in" title="Zoom in (+)">+</button>
+		</div>
+		<p id="tip" class="tip" hidden></p>
+		<div id="banner" class="banner" hidden></div>
+	</section>
+
+	<aside id="panel" aria-label="Your team">
+		<div class="turnRow">
+			<p id="turn" class="turn">Your turn</p>
+			<button id="endBtn" class="primary" type="button">End turn</button>
+		</div>
+		<ol id="roster" class="roster" aria-label="Your players"></ol>
+		<section id="card" class="card" aria-live="polite">
+			<div class="cardHead">
+				<canvas id="cIcon" class="cIcon" width="52" height="62"></canvas>
+				<div class="cText">
+					<p id="cName" class="cName">Pick a player</p>
+					<p id="cState" class="cState">Click one of yours on the field, or press 1 to 8.</p>
+				</div>
+			</div>
+			<p id="cSum" class="cSum"></p>
+			<dl id="cTraits" class="traits"></dl>
+			<div id="stances" class="seg" role="group" aria-label="How to move" hidden>
+				<button type="button" data-st="walk" title="Full moves">Walk</button>
+				<button type="button" data-st="sneak" title="2 fewer moves, 1 more cover">Sneak</button>
+				<button type="button" data-st="hide" title="No moves, 2 more cover; can still tackle anyone who comes next to you">Hide</button>
+			</div>
+			<div id="tackles" class="tackles"></div>
+		</section>
+		<ul id="log" class="log" aria-label="What happened" aria-live="polite"></ul>
+	</aside>
+</main>
+
+<dialog id="newDlg" class="sheet" aria-labelledby="newTitle">
+	<h2 id="newTitle">New game</h2>
+	<p class="lead">Sneak into Red's half, steal their flag and bring it home. First to 3 wins.</p>
+	<fieldset>
+		<legend>Map</legend>
+		<div id="maps" class="maps"></div>
+	</fieldset>
+	<div class="opts">
+		<fieldset>
+			<legend>Computer</legend>
+			<label><input type="radio" name="level" value="easy"> Easy</label>
+			<label><input type="radio" name="level" value="normal" checked> Normal</label>
+		</fieldset>
+		<fieldset>
+			<legend>Who starts</legend>
+			<label><input type="radio" name="first" value="toss" checked> Toss a coin</label>
+			<label><input type="radio" name="first" value="blue"> Me</label>
+		</fieldset>
+		<fieldset>
+			<legend>Red's moves</legend>
+			<label><input type="radio" name="speed" value="quick"> Quick</label>
+			<label><input type="radio" name="speed" value="normal" checked> Normal</label>
+			<label><input type="radio" name="speed" value="slow"> Slow</label>
+		</fieldset>
+	</div>
+	<p id="record" class="small"></p>
+	<div class="row">
+		<a class="btn ghost left" href="editor.html">Map editor</a>
+		<button id="contBtn" class="ghost" type="button" hidden>Carry on</button>
+		<button id="startBtn" class="primary" type="button" autofocus>Start</button>
+	</div>
+</dialog>
+
+<dialog id="helpDlg" class="sheet" aria-labelledby="helpTitle">
+	<div class="sheetHead"><h2 id="helpTitle">How to play</h2><button class="icon close" type="button" aria-label="Close">✕</button></div>
+	<h3>The aim</h3>
+	<p>Get Red's flag back to your base, the squares round your own flag. Each time you do, it's a point, and everyone goes back to the start. First to 3 wins.</p>
+	<p>You can't score while Red has your flag. Get it back by tackling whoever is carrying it: it goes straight home.</p>
+	<h3>A turn</h3>
+	<p>Red's moves that you can see leave a fading trail until its next turn, so you can see where everyone went. Choose how fast they play under New game.</p>
+	<p>Each side has eight players: a Scout, two Runners, a Shadow, two Hunters and two Guards (a map can set its own team). Pick one of yours, then click a lit square to move there. Each player can move, then tackle once. Move them in any order, then press <b>End turn</b>.</p>
+	<p>Scroll to zoom in and out, and drag to look around (or use the <b>−</b>, <b>Fit</b> and <b>+</b> buttons).</p>
+	<p>Grass, long grass and bridges cost 1 move a square, woods and hills 2, a ford 3. Rocks and water can't be crossed, and you can't stand on your own flag.</p>
+	<h3>Seeing and being seen</h3>
+	<p>You start knowing only your own half of the field. Ground stays on the map once one of your players has seen it.</p>
+	<p>Red's players show only while one of yours can see them. Each player sees a number of squares (its <b>sight</b>), less the other player's <b>cover</b>. Players right next to each other always see each other. A faded ring marks where you last saw someone.</p>
+	<p>Cover comes from Stealth, long grass (+1) and woods (+2), and from how you move: <b>Sneak</b> (+1, 2 fewer moves) or <b>Hide</b> (+2, no moves). Choose before you move. On a hill or a ford you stand out (−1). Anyone carrying a flag loses their own stealth and can't sneak or hide, though woods and long grass still screen them. They do run for it (1 move more) and hang on (15% off any tackle on them).</p>
+	<p>Woods and rocks block the view beyond them; from a hill you see 2 squares further, and over woods. Your move stops the moment someone new comes into sight (you keep the moves you haven't used), so you can never walk through a hidden player: you stop beside them.</p>
+	<h3>Tackling</h3>
+	<p>Tackle a Red player next to you (diagonals count). It takes 3 of your moves, or none if you're hiding, so a hidden player can always jump on whoever comes close.</p>
+	<p>The chance starts at 50%, ±8% for each point of Strength between you, and +15% if Red couldn't see you when your turn began. It's never below 15% or above 85%. Win, and they're out. Lose, and you are. Being out means missing 2 turns, then coming back at your own base. A flag carried by whoever is out goes straight home.</p>
+	<p><b>Dodging takes it out of you.</b> Whoever dodges a tackle is winded for the rest of that turn: every further tackle on them that turn gets +20%, so send in the next player.</p>
+	<h3>The players</h3>
+	<div id="roleTable" class="roleTable"></div>
+	<p class="small">Moves = Speed + 2. Sight = Sight + 2 squares. Cover = Stealth − 2.</p>
+	<h3>Keys</h3>
+	<p class="small"><kbd>1</kbd>–<kbd>8</kbd> pick a player · <kbd>Tab</kbd> next player with moves · <kbd>W</kbd> walk, <kbd>S</kbd> sneak, <kbd>H</kbd> hide · <kbd>T</kbd> tackle · <kbd>E</kbd> end turn · <kbd>Esc</kbd> put down · <kbd>+</kbd> <kbd>−</kbd> zoom, <kbd>0</kbd> fit, arrow keys look around</p>
+	<p class="small">Each game shuffles some of the woods and long grass on both halves, so the far side is never quite what you expect.</p>
+	<h3>Questions</h3>
+	<div class="faq">
+		<h4>What is Hide &amp; Seize?</h4>
+		<p>Hide &amp; Seize is a free turn-based stealth game of capture the flag, played in your browser against the computer. You lead Blue's eight players, a Scout, two Runners, a Shadow, two Hunters and two Guards, against Red's eight: scout the far side, hide in the long grass and the woods, tackle whoever is carrying your flag, and get Red's flag back to your base.</p>
+		<h4>How do you win?</h4>
+		<p>Bring Red's flag back to your base, the squares round your own flag, three times before Red does the same to you. You can't score while Red has your flag, so get it back first: tackle whoever is carrying it and it goes straight home.</p>
+		<h4>Does the computer cheat?</h4>
+		<p>It sees your players only through its own, just as you see Red's, and it remembers where it last saw them. It does know the ground on both halves from the start, while you have to explore Red's half. There are two levels, Easy and Normal.</p>
+		<h4>Can I make my own maps?</h4>
+		<p>Yes. The map editor (under New game) paints the ground, your flag and your starting players on your half, and Red's half follows, turned round, so the two sides always match. A map can be 11 to 45 squares wide and 15 to 61 long, with 1 to 12 players a side. Your maps are kept in your browser and can be played straight away. Export one as a file to share it, or send it to adam@hideandseize.com to have it added to the game for everyone.</p>
+		<h4>Is it free? Do I need an account?</h4>
+		<p>It's free, with no account, no ads and no cookies. Your game is saved in this browser as you play, so you can close the page and carry on later.</p>
+		<h4>Can I play it on a phone or tablet?</h4>
+		<p>It's made for a computer with a mouse or trackpad and a keyboard. It works on a phone or tablet, but the squares are small, so a big screen is best.</p>
+	</div>
+	<p class="small credit">Design, code and content developed with the assistance of AI (Anthropic Claude).<br><a href="https://games.adamwoodland.com/">More games at Adam's Arcade</a> · Made by <a href="https://adamwoodland.com/">Adam Woodland</a></p>
+</dialog>
+
+<dialog id="overDlg" class="sheet" aria-labelledby="overTitle">
+	<h2 id="overTitle">Game over</h2>
+	<p id="overText" class="lead"></p>
+	<dl id="overStats" class="stats"></dl>
+	<div class="row">
+		<button id="againBtn" class="primary" type="button">Play again</button>
+		<button id="overNewBtn" class="ghost" type="button">Change map</button>
+	</div>
+</dialog>
+</body>
+</html>

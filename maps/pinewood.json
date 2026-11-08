@@ -1,0 +1,30 @@
+{
+	"format": "hide-and-seize-map",
+	"version": 1,
+	"id": "pinewood",
+	"name": "Pinewood",
+	"author": "Hide & Seize",
+	"blurb": "Thick woods and narrow trails. Short sightlines: good for sneaking.",
+	"shuffle": 0.15,
+	"blueHalf": [
+		"TTT..TTTT...T...TTTT..TTT",
+		"TT..TTT..TT...TT..TTT..TT",
+		"T..TT...TTT.,.TTT...TT..T",
+		"..TTT.T..T..s..T..T.TTT..",
+		".TT...TT..T...T..TT...TT.",
+		".T.r.TT.,.TT.TT.,.TT.r.T.",
+		"...TTT...T..d..T...TTT...",
+		"T.TT...T..T.T.T..T...TT.T",
+		"T..T..TTT.......TTT..T..T",
+		".h.T...T...TTT...T...T.h.",
+		".TT..T....TT.TT....T..TT.",
+		"..T.TT.TT.......TT.TT.T..",
+		"T...T...T..,.,..T...T...T",
+		"TT.T..T....g.g....T..T.TT",
+		"T..T.TT..T.....T..TT.T..T",
+		".T....T.....F.....T....T.",
+		"TT.T....T.......T....T.TT",
+		"T..TTT..T..T.T..T..TTT..T",
+		"TTT..TT.TTT...TTT.TT..TTT"
+	]
+}

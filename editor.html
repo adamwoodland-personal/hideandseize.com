@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#121821">
+<title>Hide &amp; Seize map editor: make your own capture the flag maps</title>
+<meta name="description" content="Paint the ground, the flag and the starting players for a new Hide &amp; Seize map, of any size from 11 × 15 to 45 × 61 squares. Play it at once, or export it to share.">
+<link rel="canonical" href="https://hideandseize.com/editor.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://hideandseize.com/editor.html">
+<meta property="og:site_name" content="Hide &amp; Seize">
+<meta property="og:title" content="Hide &amp; Seize map editor">
+<meta property="og:description" content="Make your own maps for Hide &amp; Seize, the turn-based capture the flag game: paint the ground, place the flag and the team, then play it or share the file.">
+<meta property="og:image" content="https://hideandseize.com/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="editor.css">
+<script type="module" src="editor.js"></script>
+</head>
+<body class="editor">
+<header class="top">
+	<h1><span class="b">Hide</span> &amp; <span class="r">Seize</span> <span class="sub">map editor</span></h1>
+	<nav class="actions">
+		<button id="edHelpBtn" class="icon" type="button" aria-label="How the editor works" title="How the editor works">?</button>
+		<a class="btn ghost" href="./">Back to the game</a>
+	</nav>
+</header>
+
+<main class="ed">
+	<aside class="tools" aria-label="Tools">
+		<h2>Ground</h2>
+		<div id="ground" class="toolGrid" role="group" aria-label="Ground"></div>
+		<h2>Flag and players</h2>
+		<div id="pieces" class="toolGrid" role="group" aria-label="Flag and players"></div>
+		<h2>Brush</h2>
+		<div id="brush" class="seg" role="group" aria-label="Brush size">
+			<button type="button" data-b="1">1</button>
+			<button type="button" data-b="3">3×3</button>
+			<button type="button" data-b="5">5×5</button>
+		</div>
+		<div class="pair">
+			<button id="undoBtn" type="button" title="Undo (Ctrl+Z)">Undo</button>
+			<button id="redoBtn" type="button" title="Redo (Ctrl+Y)">Redo</button>
+		</div>
+		<p class="small">Paint on either half: the other half follows, turned round, so both sides always match. Ground paints round the flag and players; right-click clears a square to grass, taking away anything on it.</p>
+	</aside>
+
+	<section id="edWrap" aria-label="The map">
+		<canvas id="ed" aria-label="The map. Click or drag to paint with the chosen tool."></canvas>
+		<p id="edTip" class="tip" hidden></p>
+	</section>
+
+	<aside class="props" aria-label="This map">
+		<section class="card">
+			<label class="field">Name <input id="mName" maxlength="40" autocomplete="off"></label>
+			<label class="field">Made by <input id="mAuthor" maxlength="40" autocomplete="off"></label>
+			<label class="field">About it <textarea id="mBlurb" maxlength="200" rows="2"></textarea></label>
+			<label class="field">Shuffle each game <span class="inline"><input id="mVary" type="range" min="0" max="40" step="5"> <output id="mVaryOut"></output></span></label>
+			<p class="small">How much of each half's woods and long grass moves a square each game, so the far side has to be explored.</p>
+		</section>
+		<section class="card">
+			<h3>Size</h3>
+			<div class="sizeRow">
+				<label class="field">Width <input id="mW" type="number" min="11" max="45" step="1"></label>
+				<label class="field">Length <input id="mH" type="number" min="15" max="61" step="2"></label>
+				<button id="sizeBtn" type="button">Resize</button>
+			</div>
+			<p class="small">Width 11–45, length 15–61 (odd: the middle row is shared). Resizing keeps the middle and trims or adds at the edges.</p>
+		</section>
+		<section id="checks" class="card" aria-live="polite"></section>
+		<section class="card">
+			<div class="btnGrid">
+				<button id="saveBtn" type="button" class="primary">Save</button>
+				<button id="playBtn" type="button">Play it</button>
+				<button id="exportBtn" type="button">Export file</button>
+				<button id="copyBtn" type="button">Copy</button>
+				<button id="importBtn" type="button">Import file</button>
+				<button id="pasteBtn" type="button">Paste</button>
+				<button id="newBtn" type="button">New map</button>
+				<button id="dupBtn" type="button">Save a copy</button>
+			</div>
+			<input id="importFile" type="file" accept=".json,application/json" hidden>
+			<p id="edMsg" class="small" aria-live="polite"></p>
+		</section>
+		<section class="card">
+			<h3>Your maps</h3>
+			<ul id="mine" class="mine"></ul>
+		</section>
+	</aside>
+</main>
+
+<dialog id="newMapDlg" class="sheet" aria-labelledby="newMapTitle">
+	<h2 id="newMapTitle">New map</h2>
+	<fieldset>
+		<legend>Start from</legend>
+		<div id="fromList" class="fromList"></div>
+	</fieldset>
+	<fieldset>
+		<legend>Size of a blank map</legend>
+		<label><input type="radio" name="size" value="17x27"> Small, 17 × 27</label>
+		<label><input type="radio" name="size" value="25x37" checked> Medium, 25 × 37</label>
+		<label><input type="radio" name="size" value="33x49"> Large, 33 × 49</label>
+		<label><input type="radio" name="size" value="45x61"> Huge, 45 × 61</label>
+	</fieldset>
+	<div class="row">
+		<button type="button" class="ghost close">Cancel</button>
+		<button id="newGo" type="button" class="primary">Start</button>
+	</div>
+</dialog>
+
+<dialog id="pasteDlg" class="sheet" aria-labelledby="pasteTitle">
+	<h2 id="pasteTitle">Paste a map</h2>
+	<p class="small">Paste the text of a map file (from Copy, or someone else's file).</p>
+	<textarea id="pasteText" rows="12" spellcheck="false"></textarea>
+	<p id="pasteErr" class="small err"></p>
+	<div class="row">
+		<button type="button" class="ghost close">Cancel</button>
+		<button id="pasteGo" type="button" class="primary">Open it</button>
+	</div>
+</dialog>
+
+<dialog id="edHelp" class="sheet" aria-labelledby="edHelpTitle">
+	<div class="sheetHead"><h2 id="edHelpTitle">Making a map</h2><button class="icon close" type="button" aria-label="Close">✕</button></div>
+	<h3>Painting</h3>
+	<p>Pick a kind of ground, or the flag or a player, then click or drag on the map. The brush paints 1, 3×3 or 5×5 squares of ground at a time, round the flag and the players. Right-click clears a square back to grass, taking away a player or the flag there, and clicking a player that's already there takes it away too. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes, <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes.</p>
+	<p>You paint both halves at once: whatever you put on one half appears on the other, turned round (Red's half is Blue's turned 180°), so the two sides are always the same ground. The middle row is shared, so it mirrors left to right as well.</p>
+	<h3>What a map needs</h3>
+	<p>One flag with a square of room on every side (its eight neighbours are the base, so they can't be rocks or water), at least 3 rows back from the middle; between 1 and 12 players; and a way for every player to reach the other flag. The checks on the right say what's missing and give advice. Only maps with no problems can be played, but you can save one at any stage.</p>
+	<p>The players you place are the team: put down as many Scouts, Runners, Shadows, Hunters and Guards as you like, up to 12. Red gets the same team, in the same places on its half.</p>
+	<h3>Saving and sharing</h3>
+	<p><b>Save</b> keeps the map in this browser, and saved maps that can be played appear under <b>Your maps</b> in the game's New game. <b>Play it</b> saves and opens the game with it picked.</p>
+	<p><b>Export file</b> downloads the map as a small file, and <b>Copy</b> puts the same text on the clipboard. <b>Import file</b> and <b>Paste</b> open someone else's. To get a map added to the game for everyone, export it and send the file to adam@hideandseize.com.</p>
+	<h3>The file</h3>
+	<p class="small">A map file is JSON: <code>format</code> ("hide-and-seize-map"), <code>version</code> (1), <code>name</code>, <code>author</code>, <code>blurb</code>, <code>shuffle</code> (0 to 0.4), and <code>blueHalf</code>, Blue's half as one line of text per row, from the middle row down to Blue's back row. In each row: <code>.</code> grass, <code>,</code> long grass, <code>T</code> woods, <code>^</code> hill, <code>#</code> rocks, <code>~</code> water, <code>=</code> bridge, <code>:</code> ford, <code>F</code> Blue's flag, and <code>s</code> <code>r</code> <code>d</code> <code>h</code> <code>g</code> for a Scout, Runner, Shadow, Hunter or Guard. It can be edited in any text editor too.</p>
+	<p class="small credit">Design, code and content developed with the assistance of AI (Anthropic Claude).<br><a href="https://games.adamwoodland.com/">More games at Adam's Arcade</a> · Made by <a href="https://adamwoodland.com/">Adam Woodland</a></p>
+</dialog>
+</body>
+</html>

@@ -1,0 +1,49 @@
+/* Hide & Seize map editor: the game's look (style.css), laid out as tools | map | details. */
+h1 .sub { color: var(--muted); font-weight: 600; font-size: 15px; margin-left: 6px; }
+.ed { flex: 1; min-height: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr) 330px; }
+.tools, .props { background: var(--panel); overflow: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.tools { border-right: 1px solid var(--line); }
+.props { border-left: 1px solid var(--line); }
+.tools h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 6px 0 0; }
+.toolGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.toolGrid button { display: flex; align-items: center; gap: 8px; padding: 6px 8px; font-size: 13px; text-align: left; }
+.toolGrid button[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; background: #2a3446; }
+.toolGrid canvas { flex: none; border-radius: 4px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+#brush button[aria-pressed="true"] { background: var(--blue); color: #fff; font-weight: 700; }
+#edWrap { position: relative; min-width: 0; min-height: 0; overflow: hidden; overflow: clip; }
+#ed { position: absolute; left: 0; top: 0; display: block; touch-action: none; cursor: crosshair; }
+.props h3 { margin: 0 0 6px; font-size: 14px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.field input, .field textarea { font: inherit; color: var(--ink); background: #121821; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.field textarea { resize: vertical; }
+.field .inline { display: flex; align-items: center; gap: 8px; }
+.field input[type="range"] { flex: 1; accent-color: var(--gold); padding: 0; }
+.sizeRow { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
+.sizeRow input { width: 100%; }
+.btnGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.btnGrid button { padding: 7px 8px; font-size: 13px; }
+#checks h3 { display: flex; align-items: center; gap: 8px; }
+#checks ul { margin: 0; padding-left: 18px; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+#checks .bad { color: #ff9a90; }
+#checks .warn { color: #ffd78a; }
+#checks .good { color: #8fe0a0; }
+#checks .stats { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.mine { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.mine li { display: flex; align-items: center; gap: 6px; }
+.mine li.on .open { border-color: var(--gold); }
+.mine .open { flex: 1; text-align: left; font-size: 13px; padding: 6px 8px; }
+.mine .open small { display: block; color: var(--muted); font-size: 11px; }
+.mine .del { font-size: 12px; padding: 6px 8px; }
+.mine .del.sure { border-color: var(--red); color: var(--redInk); }
+.mine .empty { font-size: 13px; color: var(--muted); }
+.err { color: #ff9a90; }
+#pasteText { width: 100%; font: 12px/1.35 ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--ink); background: #121821; border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+.fromList { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.fromList button { padding: 6px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.fromList button[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+.fromList canvas { width: 100%; height: auto; border-radius: 4px; image-rendering: pixelated; }
+code { background: var(--panel2); border-radius: 4px; padding: 0 4px; font-size: 12px; }
+@media (max-width: 1000px) {
+	.ed { grid-template-columns: 180px minmax(0, 1fr) 280px; }
+}

@@ -1,0 +1,5 @@
+Contact: mailto:webmaster@hideandseize.com
+Canonical: https://hideandseize.com/.well-known/security.txt
+Canonical: https://www.hideandseize.com/.well-known/security.txt
+Expires: 2027-07-30T23:59:59.000Z
+Preferred-Languages: en

@@ -207,7 +207,17 @@
 
 <dialog id="newDlg" class="sheet" aria-labelledby="newTitle">
 	<h2 id="newTitle">New game</h2>
-	<p class="lead">Sneak into Red's half, steal their flag and bring it home. First to 3 wins.</p>
+	<p class="lead">You're Blue, against the computer's Red. Sneak into Red's half, steal their flag and bring it back to your base. First to 3 wins.</p>
+	<details id="intro" class="intro">
+		<summary>How it works</summary>
+		<ul class="introList">
+			<li><b>Your turn.</b> Click one of your players, then a lit square to move there. Move as many as you like, then press <b>End turn</b> and Red moves.</li>
+			<li><b>Stay out of sight.</b> You see Red's players only while one of yours can, and they see you the same way. Long grass and woods hide you, and so do <b>Sneak</b> and <b>Hide</b>, at a cost in moves.</li>
+			<li><b>Tackle.</b> Next to a Red player you can tackle them. It's down to chance: the loser sits out 2 turns, and a flag they were carrying goes home.</li>
+			<li><b>Guard your flag.</b> You can't score while Red has it, so tackle whoever is carrying it to send it home.</li>
+		</ul>
+		<p class="small">Eight players a side, each with their own speed, sight, stealth and strength. <b>How to play</b> has the full rules, and so does the <b>?</b> at the top once you've started.</p>
+	</details>
 	<fieldset>
 		<legend>Map</legend>
 		<div id="maps" class="maps"></div>
@@ -233,8 +243,9 @@
 	<p id="record" class="small"></p>
 	<div class="row">
 		<a class="btn ghost left" href="editor.html">Map editor</a>
+		<button id="rulesBtn" class="ghost" type="button">How to play</button>
 		<button id="contBtn" class="ghost" type="button" hidden>Carry on</button>
-		<button id="startBtn" class="primary" type="button" autofocus>Start</button>
+		<button id="startBtn" class="primary" type="button">Start</button>
 	</div>
 </dialog>
 

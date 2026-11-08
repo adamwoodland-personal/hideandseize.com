@@ -558,7 +558,13 @@ function openNew() {
 	for (const r of dlg.querySelectorAll('input[name="level"]')) r.onchange = markMap;
 	markMap();
 	$('contBtn').hidden = !(S && !S.winner);
+	$('intro').open = !S && !store.get(PREFS); // (open for a first visit; a heading to open after that)
 	if (!dlg.open) dlg.showModal();
+	dlg.scrollTop = 0;
+	// Start takes the focus, so Enter starts, but the dialog stays at its top. It is focused once the dialog has been
+	// laid out: WebKit scrolls to a button focused before then, preventScroll or not.
+	const was = document.activeElement;
+	requestAnimationFrame(() => requestAnimationFrame(() => { if (dlg.open && document.activeElement === was) $('startBtn').focus({ preventScroll: true }); }));
 }
 $('startBtn').addEventListener('click', () => {
 	const dlg = $('newDlg');
@@ -573,6 +579,7 @@ $('contBtn').addEventListener('click', () => $('newDlg').close());
 $('newDlg').addEventListener('cancel', (e) => { if (!S || S.winner) e.preventDefault(); });
 $('newBtn').addEventListener('click', () => { if (!ui.busy) openNew(); });
 $('helpBtn').addEventListener('click', () => $('helpDlg').showModal());
+$('rulesBtn').addEventListener('click', () => $('helpDlg').showModal()); // (over New game, which the ? can't be reached behind)
 for (const d of document.querySelectorAll('dialog')) {
 	d.querySelector('.close')?.addEventListener('click', () => d.close());
 	d.addEventListener('click', (e) => { if (e.target === d && d.id === 'helpDlg') d.close(); });

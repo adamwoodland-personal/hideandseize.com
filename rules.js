@@ -10,7 +10,7 @@ export const TERRAIN = [
 	{ key: 'forest', name: 'Woods', cost: 2, hide: 2, pass: true, block: 1, note: 'Costs 2 moves. Gives 2 cover, and nobody sees past it (except from a hill).' },
 	{ key: 'hill', name: 'Hill', cost: 2, hide: -1, pass: true, block: 0, sight: 2, note: 'Costs 2 moves. See 2 further, and over woods, but you stand out (−1 cover).' },
 	{ key: 'rock', name: 'Rocks', cost: 0, hide: 0, pass: false, block: 2, note: 'Impassable, and nobody sees past it.' },
-	{ key: 'water', name: 'Water', cost: 0, hide: 0, pass: false, block: 0, note: 'Impassable.' },
+	{ key: 'water', name: 'Water', cost: 3, hide: -1, pass: true, block: 0, wet: true, note: 'Costs 3 moves, like a ford, and soaks you: 1 less Speed, Sight, Stealth and Strength until the end of your next turn. You stand out (−1 cover).' },
 	{ key: 'bridge', name: 'Bridge', cost: 1, hide: 0, pass: true, block: 0, note: 'Crosses the water.' },
 	{ key: 'ford', name: 'Ford', cost: 3, hide: -1, pass: true, block: 0, note: 'Shallow water: costs 3 moves, and you stand out (−1 cover).' },
 ];
@@ -25,7 +25,7 @@ export const ROLES = {
 	guard: { name: 'Guard', speed: 2, sight: 4, stealth: 2, strength: 5, blurb: 'The best tackler and a good lookout, but slow.' },
 };
 export const TEAM = ['scout', 'runner', 'shadow', 'hunter', 'guard']; // (the order roles are listed in)
-export const RULES = { baseOdds: 0.5, winScore: 3, outTurns: 2, maxRounds: 200, sneakCost: 2, tackleCost: 3, strengthStep: 0.08, unseenBonus: 0.15, windedBonus: 0.2, minOdds: 0.15, maxOdds: 0.85, carrierCover: 'terrain', carrierBonus: 1, carrierGrip: 0.15 };
+export const RULES = { baseOdds: 0.5, winScore: 3, outTurns: 2, maxRounds: 200, sneakCost: 2, tackleCost: 3, strengthStep: 0.08, unseenBonus: 0.15, windedBonus: 0.2, minOdds: 0.15, maxOdds: 0.85, carrierCover: 'terrain', carrierBonus: 1, carrierGrip: 0.15, pickupCost: 1, soakTurns: 2 };
 // Names and looks, handed out at random each game (the same seed gives the same ones).
 export const NAMES = ['Ash', 'Bea', 'Cal', 'Dot', 'Eli', 'Fay', 'Gus', 'Hal', 'Ivy', 'Jo', 'Kit', 'Lou', 'Max', 'Ned', 'Ola', 'Pip', 'Quin', 'Rae', 'Sam', 'Tess', 'Uma', 'Vic', 'Wren', 'Yuki', 'Zac', 'Alba', 'Bo', 'Cleo', 'Dex', 'Effie', 'Finn', 'Gil', 'Hana', 'Iggy', 'Jas', 'Kai', 'Lola', 'Milo', 'Nia', 'Otto', 'Pia', 'Remy', 'Suki', 'Teo', 'Vera', 'Wim', 'Zia', 'Arlo'];
 export const SKINS = 5, HAIRS = 7;
@@ -50,13 +50,17 @@ export const inBase = (s, team, x, y) => {
 export const near = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) === 1;
 
 // ---- A unit's numbers -----------------------------------------------------------------------------------
-export const movesOf = (u) => ROLES[u.role].speed + 2 + (u.carrying ? RULES.carrierBonus : 0);
+// A soaked unit (it waded through water this turn or last) has 1 less of every trait. u.wet counts the
+// ends of its own turns still to go: 2 on entering water, so it lasts through its next turn.
+export const soaked = (u) => (u.wet || 0) > 0;
+const damp = (u) => (soaked(u) ? 1 : 0);
+export const movesOf = (u) => Math.max(1, ROLES[u.role].speed - damp(u) + 2 + (u.carrying ? RULES.carrierBonus : 0));
 export const stanceMoves = (u) => (u.stance === 'hide' ? 0 : u.stance === 'sneak' ? Math.max(1, movesOf(u) - RULES.sneakCost) : movesOf(u));
-export const sightOf = (s, u) => ROLES[u.role].sight + 2 + (terrainAt(s, u.x, u.y).sight || 0);
+export const sightOf = (s, u) => ROLES[u.role].sight - damp(u) + 2 + (terrainAt(s, u.x, u.y).sight || 0);
 // Cover subtracts from the distance others can see you at. A flag shows: its carrier loses its own
 // stealth and can't sneak or hide, but woods and long grass still screen it (carrierCover 'terrain').
 export const coverOf = (s, u) => (u.carrying ? (RULES.carrierCover === 'terrain' ? terrainAt(s, u.x, u.y).hide : RULES.carrierCover === 'all' ? Math.max(0, ROLES[u.role].stealth - 2) + terrainAt(s, u.x, u.y).hide : 0)
-	: Math.max(0, ROLES[u.role].stealth - 2) + terrainAt(s, u.x, u.y).hide + (u.stance === 'sneak' ? 1 : u.stance === 'hide' ? 2 : 0));
+	: Math.max(0, ROLES[u.role].stealth - damp(u) - 2) + terrainAt(s, u.x, u.y).hide + (u.stance === 'sneak' ? 1 : u.stance === 'hide' ? 2 : 0));
 // How far a sees b: its sight less b's cover, but never less than next door (1.5 takes in diagonals).
 export const spotRange = (s, a, b) => Math.max(1.5, sightOf(s, a) - coverOf(s, b));
 
@@ -126,9 +130,9 @@ export function observe(s) {
 // ---- Moving -----------------------------------------------------------------------------------------------
 // Cheapest move costs from u's square across ground its team knows (all of it when known is null),
 // never through a teammate, an enemy its team can see, or its own flag's square.
-export function reach(s, u, known = s.known[u.team]) {
+export function reach(s, u, known = s.known[u.team], seen = spotted(s, u.team)) {
 	const N = s.W * s.H, dist = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1);
-	const seen = spotted(s, u.team), block = new Uint8Array(N);
+	const block = new Uint8Array(N);
 	for (const b of s.units) if (!b.off && b !== u && (b.team === u.team || seen.has(b.id))) block[b.y * s.W + b.x] = 1;
 	const own = s.flagHome[u.team], ownFlag = own.y * s.W + own.x, start = u.y * s.W + u.x;
 	dist[start] = 0;
@@ -150,10 +154,10 @@ export function reach(s, u, known = s.known[u.team]) {
 	return { dist, prev };
 }
 // The squares u can move to this turn, with the path to each.
-export function destinations(s, u, known = s.known[u.team]) {
+export function destinations(s, u, known = s.known[u.team], seen) {
 	const out = new Map();
 	if (u.off || u.team !== s.turn || s.winner || u.mp <= 0) return out;
-	const { dist, prev } = reach(s, u, known), start = u.y * s.W + u.x;
+	const { dist, prev } = reach(s, u, known, seen), start = u.y * s.W + u.x;
 	for (let i = 0; i < dist.length; i++) if (i !== start && dist[i] <= u.mp) out.set(i, { cost: dist[i], path: pathFrom(prev, start, i) });
 	return out;
 }
@@ -181,9 +185,10 @@ export function step(s, u, j) {
 	u.x = x; u.y = y; u.mp -= t.cost; u.moved = true;
 	trail.push(j);
 	ev.push({ type: 'step', unit: u.id, x, y });
+	if (t.wet) { if (!soaked(u)) ev.push({ type: 'soak', unit: u.id }); u.wet = RULES.soakTurns; }
 	const enemy = other(u.team), fl = s.flags[enemy], fh = s.flagHome[enemy];
 	if (fl.home && x === fh.x && y === fh.y) {
-		fl.home = false; fl.carrier = u.id; u.carrying = true; u.stance = 'walk'; u.mp = Math.max(0, u.mp - 1);
+		fl.home = false; fl.carrier = u.id; u.carrying = true; u.stance = 'walk'; u.mp = Math.max(0, u.mp - RULES.pickupCost); // (picking it up takes a move)
 		s.stats[u.team].grabs++;
 		ev.push({ type: 'grab', unit: u.id });
 	}
@@ -226,6 +231,8 @@ export function tackleOdds(s, a, b, at = a) {
 	const parts = [[RULES.baseOdds === 0.5 ? 'Even chance' : 'To start with', RULES.baseOdds]];
 	const d = ROLES[a.role].strength - ROLES[b.role].strength;
 	if (d) parts.push([d > 0 ? `Stronger by ${d}` : `Weaker by ${-d}`, RULES.strengthStep * d]);
+	if (soaked(a)) parts.push(['Soaked: 1 less Strength', -RULES.strengthStep]);
+	if (soaked(b)) parts.push(['They are soaked', RULES.strengthStep]);
 	if (s.ambush[a.id]) parts.push(['Unseen when the turn began', RULES.unseenBonus]);
 	if (b.carrying && RULES.carrierGrip) parts.push(['They hang on to the flag', -RULES.carrierGrip]);
 	const w = s.winded?.[b.id] || 0;
@@ -262,7 +269,7 @@ function sendOff(s, u) {
 		f.home = true; f.carrier = null; u.carrying = false;
 		ev.push({ type: 'return', team: other(u.team) });
 	}
-	u.off = true; u.out = RULES.outTurns; u.stance = 'walk'; u.mp = 0;
+	u.off = true; u.out = RULES.outTurns; u.stance = 'walk'; u.mp = 0; u.wet = 0;
 	ev.push({ type: 'out', unit: u.id });
 	return ev;
 }
@@ -285,7 +292,7 @@ function checkScore(s, team, mover = null) {
 function resetPositions(s) {
 	for (const u of s.units) {
 		const p = s.starts[u.team][u.slot];
-		Object.assign(u, { x: p.x, y: p.y, off: false, out: 0, stance: 'walk', mp: 0, moved: true, acted: true, carrying: false });
+		Object.assign(u, { x: p.x, y: p.y, off: false, out: 0, stance: 'walk', mp: 0, moved: true, acted: true, carrying: false, wet: 0 });
 	}
 	for (const t of ['blue', 'red']) Object.assign(s.flags[t], { home: true, carrier: null });
 	s.lastSeen = { blue: {}, red: {} };
@@ -330,6 +337,7 @@ export function startTurn(s) {
 }
 export function endTurn(s) {
 	if (s.winner) return [];
+	for (const u of s.units) if (u.team === s.turn && u.wet > 0) u.wet--; // (drying off: soaked lasts to the end of its next turn)
 	s.turn = other(s.turn);
 	if (s.turn === (s.first || 'blue')) s.round++;
 	return [{ type: 'turn', team: s.turn, round: s.round }, ...startTurn(s)];
@@ -356,7 +364,7 @@ export function newGame({ map = null, mapId = MAPS[0]?.id, seed = (Math.random()
 	for (let i = names.length - 1; i > 0; i--) { const j = Math.floor(pick() * (i + 1)); [names[i], names[j]] = [names[j], names[i]]; }
 	for (const team of ['blue', 'red']) m.starts[team].forEach((p, i) => {
 		s.units.push({
-			id: team[0] + i, team, role: p.role, slot: i, x: p.x, y: p.y, off: false, out: 0, stance: 'walk', mp: 0, moved: false, acted: false, carrying: false,
+			id: team[0] + i, team, role: p.role, slot: i, x: p.x, y: p.y, off: false, out: 0, stance: 'walk', mp: 0, moved: false, acted: false, carrying: false, wet: 0,
 			name: names[s.units.length % names.length], skin: Math.floor(pick() * SKINS), hair: Math.floor(pick() * HAIRS),
 		});
 	});
@@ -382,6 +390,8 @@ export function rand(s) {
 }
 
 // A saved game is used only if every part of it makes sense; otherwise the page starts afresh.
+const plain = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
+const same = (p, q) => plain(p) && p.x === q.x && p.y === q.y;
 export function validState(s) {
 	try {
 		if (!s || s.v !== 1 || !s.map || typeof s.map !== 'object' || s.map.id !== s.mapId || typeof s.map.name !== 'string') return false;
@@ -390,11 +400,29 @@ export function validState(s) {
 		const m = buildMap(s.map, s.seed), N = m.W * m.H;
 		if (s.W !== m.W || s.H !== m.H || s.mid !== m.mid || !Array.isArray(s.tiles) || s.tiles.length !== N || s.tiles.some((v, i) => v !== m.tiles[i])) return false;
 		if (!['blue', 'red'].includes(s.turn) || !(s.winner === null || ['blue', 'red', 'draw'].includes(s.winner))) return false;
-		if (!Number.isInteger(s.round) || s.round < 1 || !Number.isInteger(s.rng)) return false;
+		if (!Number.isInteger(s.round) || s.round < 1 || !Number.isInteger(s.rng) || !Number.isInteger(s.seed) || !['blue', 'red'].includes(s.first)) return false;
+		if (typeof s.level !== 'string' || typeof s.mustEnd !== 'boolean' || (s.knownRev !== undefined && !Number.isInteger(s.knownRev))) return false;
+		// The flags and starts must be the map's own.
+		for (const t of ['blue', 'red']) {
+			if (!same(s.flagHome?.[t], m.flags[t])) return false;
+			if (!Array.isArray(s.starts?.[t]) || s.starts[t].length !== m.starts[t].length || s.starts[t].some((p, k) => !same(p, m.starts[t][k]) || p.role !== m.starts[t][k].role)) return false;
+		}
+		// The bookkeeping objects: plain objects (or lists) of the right kind, if there at all.
+		const ids = new Set(m.starts.blue.flatMap((_, k) => ['b' + k, 'r' + k]));
+		const table = (o, ok) => o === undefined || (plain(o) && Object.entries(o).every(([k, v]) => ids.has(k) && ok(v)));
+		if (!table(s.ambush, (v) => typeof v === 'boolean') || !table(s.bumped, (v) => v === 'blue' || v === 'red') || !table(s.aiCount, Number.isInteger)
+			|| !table(s.aiMoves, Number.isInteger) || !table(s.aiHold, Number.isInteger) || !table(s.trail, (v) => Array.isArray(v) && v.every((i) => Number.isInteger(i) && i >= 0 && i < N))
+			|| !table(s.aiPlan, (v) => plain(v) && Number.isInteger(v.i) && typeof v.carrying === 'boolean')
+			|| !(s.aiClaims === undefined || (plain(s.aiClaims) && Object.values(s.aiClaims).every((l) => Array.isArray(l) && l.every((c) => plain(c) && Number.isInteger(c.x) && Number.isInteger(c.y)))))
+			|| !(s.aiDone === undefined || (Array.isArray(s.aiDone) && s.aiDone.every((id) => ids.has(id))))) return false;
 		for (const t of ['blue', 'red']) {
 			if (!Array.isArray(s.known?.[t]) || s.known[t].length !== N || s.known[t].some((v) => v !== 0 && v !== 1)) return false;
 			if (!Number.isInteger(s.score?.[t]) || s.score[t] < 0 || s.score[t] > RULES.winScore) return false;
-			if (typeof s.flags?.[t]?.home !== 'boolean' || typeof s.lastSeen?.[t] !== 'object' || !s.stats?.[t]) return false;
+			if (typeof s.flags?.[t]?.home !== 'boolean' || !plain(s.lastSeen?.[t]) || !plain(s.stats?.[t])) return false;
+			if (!['tackles', 'won', 'grabs'].every((k) => Number.isInteger(s.stats[t][k]) && s.stats[t][k] >= 0)) return false;
+			for (const [id, e] of Object.entries(s.lastSeen[t])) {
+				if (!ids.has(id) || id[0] === t[0] || !plain(e) || !Number.isInteger(e.x) || !Number.isInteger(e.y) || !inside(s, e.x, e.y) || !Number.isInteger(e.round) || typeof e.carrying !== 'boolean') return false;
+			}
 		}
 		if (!Array.isArray(s.units) || s.units.length !== m.starts.blue.length * 2) return false;
 		if (s.winded && (typeof s.winded !== 'object' || Object.values(s.winded).some((v) => !Number.isInteger(v) || v < 1))) return false;
@@ -405,6 +433,8 @@ export function validState(s) {
 			if (typeof u.name !== 'string' || u.name.length > 20 || !Number.isInteger(u.skin) || u.skin < 0 || u.skin >= SKINS || !Number.isInteger(u.hair) || u.hair < 0 || u.hair >= HAIRS) return false;
 			if (!ROLES[u.role] || !['blue', 'red'].includes(u.team) || !['walk', 'sneak', 'hide'].includes(u.stance)) return false;
 			if (typeof u.off !== 'boolean' || !Number.isInteger(u.out) || u.out < 0 || u.out > RULES.outTurns || !Number.isFinite(u.mp)) return false;
+			if (typeof u.moved !== 'boolean' || typeof u.acted !== 'boolean' || typeof u.carrying !== 'boolean') return false;
+			if (u.wet !== undefined && (!Number.isInteger(u.wet) || u.wet < 0 || u.wet > RULES.soakTurns)) return false;
 			if (!u.off) {
 				if (!Number.isInteger(u.x) || !Number.isInteger(u.y) || !inside(s, u.x, u.y) || !TERRAIN[s.tiles[u.y * s.W + u.x]].pass) return false;
 				if (taken.has(u.y * s.W + u.x)) return false;

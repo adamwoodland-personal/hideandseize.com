@@ -20,7 +20,7 @@ export const CHAR = { '.': 0, ',': 1, T: 2, '^': 3, '#': 4, '~': 5, '=': 6, ':':
 export const ROLE_LETTER = { s: 'scout', r: 'runner', d: 'shadow', h: 'hunter', g: 'guard' };
 export const LETTER = Object.fromEntries(Object.entries(ROLE_LETTER).map(([k, v]) => [v, k]));
 const ROLE_ORDER = ['scout', 'runner', 'shadow', 'hunter', 'guard'];
-const PASS = [true, true, true, true, false, false, true, true], COST = [1, 1, 2, 2, 0, 0, 1, 3];
+const PASS = [true, true, true, true, false, true, true, true], COST = [1, 1, 2, 2, 0, 3, 1, 3]; // (as rules.js TERRAIN: rocks block, water is waded)
 
 // The maps the game knows: the built-in ones, then the player's own (added by the page).
 export const MAPS = [];
@@ -91,9 +91,9 @@ export function checkMap(def) {
 	const m = buildMap(def, 0, 0), N = m.W * m.H;
 	const f = m.flags.blue;
 	if (f.x < 1 || f.x > W - 2 || f.y > H - 2) errors.push('The flag needs a square of room on every side for its base.');
-	else for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!PASS[m.tiles[(f.y + dy) * W + f.x + dx]]) { errors.push("The eight squares round the flag (its base) can't be rocks or water."); dy = dx = 2; }
+	else for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const v = m.tiles[(f.y + dy) * W + f.x + dx]; if (v === T.ROCK || v === T.WATER) { errors.push("The eight squares round the flag (its base) can't be rocks or water."); dy = dx = 2; } }
 	if (f.y - mid < 3) errors.push('The flag must be at least 3 rows back from the middle.');
-	// Every start must be able to reach the other flag, and its own base.
+	// Every start must be able to reach the other flag, and the flag must be able to come home from there.
 	const from = (sx, sy, ownFlag) => {
 		const dist = new Float64Array(N).fill(Infinity), q = [[sy * W + sx]];
 		dist[sy * W + sx] = 0;
@@ -116,7 +116,14 @@ export function checkMap(def) {
 		if (!Number.isFinite(c)) stuck.push(p);
 		else far = Math.max(far, c);
 	}
-	if (stuck.length) errors.push(`${stuck.length === 1 ? 'A player' : stuck.length + ' players'} can't reach Red's flag (rocks or water are in the way): ${stuck.map((p) => `${p.role} at ${p.x + 1},${p.y - mid}`).join('; ')}.`);
+	if (stuck.length) errors.push(`${stuck.length === 1 ? 'A player' : stuck.length + ' players'} can't reach Red's flag (rocks are in the way): ${stuck.map((p) => `${p.role} at ${p.x + 1},${p.y - mid}`).join('; ')}.`);
+	// (from Red's flag, a carrier must be able to get back to a square of its own base: a wall down the
+	// middle of each half would let both sides steal a flag that could never be scored)
+	if (stuck.length < m.starts.blue.length) {
+		const home = from(theirs.x, theirs.y, ownFlag), base = [];
+		for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) base.push((f.y + dy) * W + f.x + dx);
+		if (!base.some((i) => Number.isFinite(home[i]))) errors.push("Red's flag can't be carried back to Blue's base from where it stands: rocks cut the way home off.");
+	}
 	if (m.starts.blue.some((p) => p.x === f.x && p.y === f.y)) errors.push("A player can't start on the flag.");
 	// Advice.
 	const cover = m.tiles.filter((t) => t === T.SCRUB || t === T.FOREST).length / N;

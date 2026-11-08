@@ -60,6 +60,8 @@ function frame(now) {
 const tween = (u, from, to, ms) => (calm.matches || ms <= 0 ? Promise.resolve()
 	: new Promise((done) => { tweens.add({ id: u.id, from, to, t0: performance.now(), ms, done }); kick(); }));
 const sleep = (ms) => new Promise((r) => setTimeout(r, calm.matches ? Math.min(ms, 150) : ms));
+// A delayed step for the game now in play: if a new game has started by then, it does nothing.
+const later = (fn, ms) => { const game = S; setTimeout(() => { if (S && S === game) fn(); }, ms); };
 function fx(x, y, text, color, ring = false, dur = 1100) { ui.fx.push({ x, y, text, color, ring, t0: performance.now(), dur }); kick(); }
 
 new ResizeObserver(() => fit()).observe($('boardWrap'));
@@ -138,16 +140,19 @@ function panel() {
 	portrait(icon, u, 52, 62);
 	$('cName').textContent = u.team === 'blue' ? `${u.name} · ${roleName(u)}` : `Red's ${roleName(u)} ${u.name}`;
 	$('cState').textContent = stateLine(u);
-	const pips = (n) => `<span class="pips">${[1, 2, 3, 4, 5].map((k) => `<i class="${k <= n ? 'on' : ''}"></i>`).join('')}</span>`;
+	// (a soaked unit's lost point shows as a damp pip)
+	const pips = (n, lost = 0) => `<span class="pips">${[1, 2, 3, 4, 5].map((k) => `<i class="${k <= n ? 'on' : k <= n + lost ? 'wet' : ''}"></i>`).join('')}</span>`;
 	const onField = !u.off;
 	const nums = { moves: R.movesOf(u), sight: onField ? R.sightOf(S, u) : rl.sight + 2, cover: onField ? R.coverOf(S, u) : Math.max(0, rl.stealth - 2) };
-	$('cSum').textContent = `${nums.moves} moves · sees ${nums.sight} · cover ${nums.cover} · strength ${rl.strength}`;
+	const signed = (n) => (n < 0 ? `−${-n}` : `${n}`); // (standing out, on a hill or a ford or in water, is less than none)
+	const wet = R.soaked(u) ? 1 : 0, strength = Math.max(0, rl.strength - wet);
+	$('cSum').textContent = `${nums.moves} moves · sees ${nums.sight} · cover ${signed(nums.cover)} · strength ${strength}${wet ? ' · soaked' : ''}`;
 	$('cTraits').innerHTML = [
 		['Speed', rl.speed, `${nums.moves} moves`],
 		['Sight', rl.sight, `${nums.sight} squares`],
-		['Stealth', rl.stealth, `cover ${nums.cover}`],
-		['Strength', rl.strength, `${rl.strength}`],
-	].map(([n, v, x]) => `<dt>${n}</dt><dd>${pips(v)}</dd><dd class="val">${x}</dd>`).join('');
+		['Stealth', rl.stealth, `cover ${signed(nums.cover)}`],
+		['Strength', rl.strength, `${strength}`],
+	].map(([n, v, x]) => `<dt>${n}</dt><dd>${pips(v - wet, wet)}</dd><dd class="val">${x}</dd>`).join('');
 	const st = $('stances');
 	st.hidden = !(u.team === 'blue' && onField);
 	for (const b of st.querySelectorAll('button')) {
@@ -173,11 +178,12 @@ function panel() {
 function stateLine(u) {
 	if (u.team === 'red') {
 		if (!ui.visible.has(u.id)) return 'Not in sight';
-		return [u.carrying ? 'Carrying your flag!' : '', u.stance === 'hide' ? 'Hiding' : u.stance === 'sneak' ? 'Sneaking' : '', R.ROLES[u.role].blurb].filter(Boolean).join(' · ');
+		return [u.carrying ? 'Carrying your flag!' : '', R.soaked(u) ? 'Soaked' : '', u.stance === 'hide' ? 'Hiding' : u.stance === 'sneak' ? 'Sneaking' : '', R.ROLES[u.role].blurb].filter(Boolean).join(' · ');
 	}
 	if (u.off) return `Out: ${outText(u)}, at your base.`;
 	const bits = [];
 	if (u.carrying) bits.push("Carrying Red's flag: get it to your base");
+	if (R.soaked(u)) bits.push(`Soaked: 1 less of everything ${u.wet > 1 ? 'until the end of your next turn' : 'for this turn'}`);
 	if (S.turn === 'blue') {
 		if (u.acted) bits.push('Done this turn');
 		else if (u.stance === 'hide') bits.push('Hiding: no moves, but can tackle anyone next to it');
@@ -241,7 +247,7 @@ function setStance(st) {
 function after(u) {
 	save();
 	if (S.winner) { refresh(); gameOver(); return; }
-	if (S.mustEnd) { refresh(); setTimeout(endTurn, calm.matches ? 300 : 1400); return; }
+	if (S.mustEnd) { refresh(); later(() => S.mustEnd && endTurn(), calm.matches ? 300 : 1400); return; }
 	if (u && !readyUnit(u)) {
 		const next = S.units.find((m) => m.team === 'blue' && readyUnit(m));
 		ui.selected = next ? next.id : u.id;
@@ -264,7 +270,8 @@ async function runRed() {
 	refresh();
 	await sleep(350);
 	let guard = 0;
-	while (S && S.turn === 'red' && !S.winner && guard++ < 400) {
+	const game = S;
+	while (S && S === game && S.turn === 'red' && !S.winner && guard++ < 400) {
 		const act = aiStep(S, 'red', S.level);
 		if (act.type === 'none') break;
 		if (act.type === 'end') { events(R.endTurn(S)); break; }
@@ -296,7 +303,7 @@ async function runRed() {
 		}
 		if (S.mustEnd) { await sleep(1300); events(R.endTurn(S)); break; }
 	}
-	if (S && S.turn === 'red' && !S.winner) events(R.endTurn(S)); // (a stuck computer never holds the game up)
+	if (S && S === game && S.turn === 'red' && !S.winner) events(R.endTurn(S)); // (a stuck computer never holds the game up)
 	ui.busy = false;
 	save();
 	if (S.winner) { refresh(); gameOver(); return; }
@@ -316,6 +323,9 @@ function events(list) {
 				break;
 			case 'spot':
 				if (u.team === 'blue') tipText(`Stopped: ${e.ids.map((id) => who(R.unitById(S, id))).join(' and ')} in sight. You can keep moving.`, 3000);
+				break;
+			case 'soak':
+				if (u.team === 'blue' || R.spotted(S, 'blue').has(u.id)) log(`${cap(who(u))} is soaked: 1 less Speed, Sight, Stealth and Strength until the end of ${u.team === 'blue' ? 'your' : "Red's"} next turn.`, u.team);
 				break;
 			case 'grab':
 				banner(u.team === 'blue' ? "You've got Red's flag!" : 'Red has your flag!', u.team === 'blue' ? 'Get it back to your base.' : 'Tackle the carrier to send it home.', u.team);
@@ -385,12 +395,13 @@ function tip(sq, ms) {
 	if (!sq) { tipText(''); return; }
 	const i = sq.y * S.W + sq.x;
 	if (!S.known.blue[i]) { tipText('Unexplored ground.', ms); return; }
-	const T = R.terrainAt(S, sq.x, sq.y), u = R.unitAt(S, sq.x, sq.y), bits = [];
+	const T = R.terrainAt(S, sq.x, sq.y), at = R.unitAt(S, sq.x, sq.y), bits = [];
+	const u = at && (at.team === 'blue' || ui.visible.has(at.id)) ? at : null; // (never anyone Blue can't see)
 	if (R.isFlagSquare(S, 'blue', sq.x, sq.y)) bits.push(S.flags.blue.home ? 'Your flag.' : 'Your flag should be here: Red has it.');
 	else if (R.isFlagSquare(S, 'red', sq.x, sq.y)) bits.push(S.flags.red.home ? "Red's flag: walk onto it to take it." : "Red's flag square.");
 	else if (R.inBase(S, 'blue', sq.x, sq.y)) bits.push('Your base: bring Red\'s flag here.');
 	else if (R.inBase(S, 'red', sq.x, sq.y)) bits.push("Red's base.");
-	if (u && (u.team === 'blue' || ui.visible.has(u.id))) bits.push(`${cap(who(u))}${u.carrying ? ', with a flag' : ''}.`);
+	if (u) bits.push(`${cap(who(u))}${u.carrying ? ', with a flag' : ''}${R.soaked(u) ? ', soaked' : ''}.`);
 	const g = ui.ghosts.find((h) => h.x === sq.x && h.y === sq.y);
 	if (g && !u) bits.push(`Red's ${R.ROLES[g.role].name} was seen here ${g.age === 0 ? 'this round' : g.age === 1 ? 'last round' : '2 rounds ago'}.`);
 	bits.push(`${T.name}: ${T.note}`);
@@ -520,7 +531,7 @@ function startGame(mapId, level, firstPref) {
 	log(`${map.name}${map.author ? ` by ${map.author}` : ''}, against the ${LEVELS[level].name.toLowerCase()} computer. First to 3.`);
 	if (firstPref !== 'blue') banner(first === 'blue' ? 'You won the toss' : 'Red won the toss', first === 'blue' ? 'You move first' : 'Red moves first', first);
 	save();
-	if (first === 'red') { refresh(); setTimeout(runRed, 900); }
+	if (first === 'red') { refresh(); later(() => S.turn === 'red' && !ui.busy && runRed(), 900); }
 	else { ui.selected = S.units.find((u) => u.team === 'blue').id; refresh(); }
 }
 function openNew() {
@@ -602,7 +613,7 @@ function gameOver() {
 		<dt>Tackles won</dt><dd>${b.won} of ${b.tackles}</dd><dd>${rd.won} of ${rd.tackles}</dd>
 		<dt>Flags grabbed</dt><dd>${b.grabs}</dd><dd>${rd.grabs}</dd>
 		<dt>On this map</dt><dd>won ${r.w}</dd><dd>lost ${r.l}</dd>`;
-	setTimeout(() => $('overDlg').showModal(), 900);
+	later(() => !$('overDlg').open && $('overDlg').showModal(), 900);
 }
 $('againBtn').addEventListener('click', () => { $('overDlg').close(); startGame(S.mapId, S.level, prefs.first); }); // (its own copy of the map, if it has since gone)
 $('overNewBtn').addEventListener('click', () => { $('overDlg').close(); openNew(); });
@@ -610,15 +621,24 @@ $('overNewBtn').addEventListener('click', () => { $('overDlg').close(); openNew(
 // ---- Start ----------------------------------------------------------------------------------------------------------------------
 {
 	const saved = store.get(SAVE);
-	if (saved && R.validState(saved) && !saved.winner) {
-		S = saved;
-		S.log ||= [];
-		fit();
-		log('Carrying on where you left off.');
-		ui.selected = S.turn === 'blue' ? (S.units.find((u) => u.team === 'blue' && readyUnit(u)) || {}).id || null : null;
-		refresh();
-		if (S.turn === 'red') setTimeout(runRed, 600);
-	} else {
+	let carried = false;
+	if (saved && R.validState(saved) && !saved.winner && LEVELS[saved.level]) {
+		try {
+			S = saved;
+			if (!Array.isArray(S.log) || !S.log.every((l) => l && typeof l.text === 'string' && typeof l.cls === 'string')) S.log = [];
+			for (const u of S.units) u.wet ||= 0; // (saves from before water could be waded)
+			fit();
+			log('Carrying on where you left off.');
+			ui.selected = S.turn === 'blue' ? (S.units.find((u) => u.team === 'blue' && readyUnit(u)) || {}).id || null : null;
+			refresh();
+			carried = true;
+			if (S.turn === 'red') later(() => S.turn === 'red' && !ui.busy && runRed(), 600);
+		} catch (e) {
+			console.warn('The saved game could not be loaded, so a new one starts:', e);
+			S = null; ui.selected = null; $('log').replaceChildren();
+		}
+	}
+	if (!carried) {
 		store.del(SAVE);
 		if (MAPS.length) backdrop = R.newGame({ mapId: prefs.mapId, level: prefs.level, seed: 1 });
 		fit();
@@ -632,4 +652,4 @@ $('overNewBtn').addEventListener('click', () => { $('overDlg').close(); openNew(
 		if (MAPS.some((m) => m.id === want)) { prefs.mapId = want; openNew(); }
 	}
 }
-window.__HS = { get S() { return S; }, ui, R, board, startGame, endTurn, onTap, runRed };
+window.__HS = { get S() { return S; }, ui, R, board, startGame, endTurn, onTap, runRed, refresh, tip };

@@ -9,13 +9,14 @@ const PANTS = '#2b3142', SHOE = '#191d26', TAU = Math.PI * 2;
 
 // Feet at (x, y), h pixels tall. o: { role, team, skin, hair, facing (1 right, −1 left),
 // pose: 'stand' | 'walk' | 'sneak' | 'hide', phase (0–1 through a stride), flag (colour of a carried
-// flag's team, or null), winded (count), time (ms, for the stars), alpha, shadow (default true) }.
+// flag's team, or null), winded (count), time (ms, for the stars), alpha, shadow (default true),
+// wading (stands in water: the legs are under it), soaked (drips) }.
 export function drawFigure(g, x, y, h, o) {
 	const C = KIT[o.team], skin = SKIN[o.skin ?? 0], hair = HAIR[o.hair ?? 0], pose = o.pose || 'stand';
 	g.save();
 	g.translate(x, y);
 	g.globalAlpha *= o.alpha ?? 1;
-	if (o.shadow !== false) { g.fillStyle = 'rgba(0,0,0,0.28)'; g.beginPath(); g.ellipse(0, 0, h * 0.25, h * 0.075, 0, 0, TAU); g.fill(); }
+	if (o.shadow !== false && !o.wading) { g.fillStyle = 'rgba(0,0,0,0.28)'; g.beginPath(); g.ellipse(0, 0, h * 0.25, h * 0.075, 0, 0, TAU); g.fill(); }
 	g.scale(h, h);
 	if ((o.facing ?? 1) < 0) g.scale(-1, 1);
 	const walk = pose === 'walk', low = pose === 'sneak' ? 0.84 : pose === 'hide' ? 0.7 : 1;
@@ -57,11 +58,30 @@ export function drawFigure(g, x, y, h, o) {
 	if (o.role === 'hunter') net(g, armSwing);
 	if (o.flag) carried(g, o.role === 'guard' || o.role === 'hunter' ? -1 : 1, o.flag, o.time || 0);
 	g.restore();
+	if (o.wading) wade(g);
 	if (pose === 'hide') bush(g);
+	if (o.soaked) drips(g, low);
 	if (o.winded) stars(g, o.winded, o.time || 0, low);
 	g.restore();
 }
 
+// Water to the knees: the legs disappear under a surface with a ring of ripples round them.
+function wade(g) {
+	g.fillStyle = '#5aa5d8'; // (the water square's own colour)
+	g.beginPath(); g.moveTo(-0.34, -0.2); g.quadraticCurveTo(0, -0.27, 0.34, -0.2); g.lineTo(0.34, 0.06); g.lineTo(-0.34, 0.06); g.closePath(); g.fill();
+	g.strokeStyle = 'rgba(255,255,255,0.75)'; g.lineWidth = 0.028;
+	g.beginPath(); g.ellipse(0, -0.21, 0.24, 0.045, 0, 0, TAU); g.stroke();
+	g.strokeStyle = 'rgba(255,255,255,0.4)';
+	g.beginPath(); g.ellipse(0, -0.19, 0.32, 0.065, 0, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+}
+// Soaked: drops falling from the head and hands.
+function drips(g, low) {
+	g.fillStyle = '#7fbfff'; g.strokeStyle = 'rgba(20,50,90,0.55)'; g.lineWidth = 0.012;
+	for (const [x, y, r] of [[-0.2, -0.86, 0.04], [0.21, -0.7, 0.034], [-0.17, -0.5, 0.03]]) {
+		const yy = y * low;
+		g.beginPath(); g.moveTo(x, yy - r * 1.9); g.quadraticCurveTo(x + r * 1.1, yy - r * 0.2, x, yy + r); g.quadraticCurveTo(x - r * 1.1, yy - r * 0.2, x, yy - r * 1.9); g.fill(); g.stroke();
+	}
+}
 function arm(g, sx, swing, color, skin) {
 	const hx = sx * 1.4 + swing, hy = -0.45;
 	g.strokeStyle = color; g.lineWidth = 0.07;
@@ -195,5 +215,5 @@ export function portrait(canvas, u, w, h) {
 	const g = canvas.getContext('2d');
 	g.setTransform(d, 0, 0, d, 0, 0);
 	g.clearRect(0, 0, w, h);
-	drawFigure(g, w * 0.48, h * 0.97, h * 0.84, { ...u, facing: 1, pose: u.stance === 'hide' ? 'hide' : u.stance === 'sneak' ? 'sneak' : 'stand', flag: u.carrying ? (u.team === 'blue' ? 'red' : 'blue') : null, shadow: false });
+	drawFigure(g, w * 0.48, h * 0.97, h * 0.84, { ...u, facing: 1, pose: u.stance === 'hide' ? 'hide' : u.stance === 'sneak' ? 'sneak' : 'stand', flag: u.carrying ? (u.team === 'blue' ? 'red' : 'blue') : null, shadow: false, soaked: (u.wet || 0) > 0 });
 }

@@ -268,7 +268,7 @@ function open(d, isDirty = false) {
 	store.set(DRAFT, { def, dirty });
 }
 let sayTimer = 0;
-function say(t) { const m = $('edMsg'); m.textContent = t; clearTimeout(sayTimer); sayTimer = setTimeout(() => (m.textContent = ''), 6000); }
+function say(t, warn = false) { const m = $('edMsg'); m.textContent = t; m.classList.toggle('warnText', warn); clearTimeout(sayTimer); sayTimer = setTimeout(() => { m.textContent = ''; m.classList.remove('warnText'); }, 6000); }
 
 for (const [k, inp] of [['name', 'mName'], ['author', 'mAuthor'], ['blurb', 'mBlurb']]) $(inp).addEventListener('input', () => { def[k] = $(inp).value; dirty = true; store.set(DRAFT, { def, dirty }); clearTimeout(checkTimer); checkTimer = setTimeout(checks, 200); });
 $('mVary').addEventListener('input', () => { def.vary = +$('mVary').value / 100; $('mVaryOut').textContent = `${$('mVary').value}%`; dirty = true; store.set(DRAFT, { def, dirty }); });
@@ -402,7 +402,7 @@ let leaveArmed = 0;
 function confirmLeave() {
 	if (Date.now() - leaveArmed < 6000) return true;
 	leaveArmed = Date.now();
-	say('This map has unsaved changes: do that again to leave them, or Save first.');
+	say('This map has unsaved changes: do that again to drop them, or Save first.', true);
 	return false;
 }
 
@@ -433,8 +433,22 @@ function mine() {
 	}
 }
 
-// New map: blank (in a size), or a copy of a built-in map or one of your own.
+// New map: blank, or a copy of a built-in map or one of your own, in any of the sizes (a copy can keep
+// its own). It starts at once: with unsaved changes the dialog says they'll be dropped.
 let from = 'blank';
+const sizePick = () => $('newMapDlg').querySelector('input[name="size"]:checked');
+function pickFrom(id) {
+	from = id;
+	for (const x of $('fromList').querySelectorAll('button')) x.setAttribute('aria-pressed', String(x.dataset.id === from));
+	// (a blank map has no size of its own; a copy keeps its own unless another size is picked)
+	const same = $('newMapDlg').querySelector('input[value="same"]');
+	$('sameSize').hidden = id === 'blank';
+	if (id === 'blank' && same.checked) $('newMapDlg').querySelector('input[value="25x37"]').checked = true;
+	if (id !== 'blank') same.checked = true;
+	sizeNote();
+}
+const sizeNote = () => { $('sizeNote').hidden = from === 'blank' || sizePick().value === 'same'; };
+for (const r of document.querySelectorAll('#newMapDlg input[name="size"]')) r.addEventListener('change', sizeNote);
 $('newBtn').addEventListener('click', () => {
 	const host = $('fromList');
 	host.replaceChildren();
@@ -443,25 +457,28 @@ $('newBtn').addEventListener('click', () => {
 		b.type = 'button'; b.dataset.id = id;
 		if (m) { const c = document.createElement('canvas'); c.width = 100; c.height = 150; preview(c, m); b.append(c); }
 		const s = document.createElement('span'); s.textContent = label; b.append(s);
-		b.addEventListener('click', () => { from = id; for (const x of host.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x.dataset.id === from)); });
+		b.addEventListener('click', () => pickFrom(id));
 		host.append(b);
 	};
 	add('blank', 'Blank');
 	for (const d of [...MAPS.filter((m) => m.builtIn), ...myMaps().filter((m) => m.playable)]) { try { add(d.id, d.name, buildMap(d, 0, 0)); } catch (e) { /* skip */ } }
-	from = 'blank';
-	for (const x of host.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x.dataset.id === from));
+	pickFrom('blank');
+	$('newDirty').hidden = !dirty;
 	$('newMapDlg').showModal();
 });
 $('newGo').addEventListener('click', () => {
-	if (dirty && !confirmLeave()) { $('newMapDlg').close(); return; }
+	const size = sizePick().value, [W, H] = size === 'same' ? [0, 0] : size.split('x').map(Number);
 	if (from === 'blank') {
-		const [W, H] = $('newMapDlg').querySelector('input[name="size"]:checked').value.split('x').map(Number);
 		open(blank(W, H));
 		say(`A blank ${W} × ${H} map, with a flag and a team of eight to start you off.`);
 	} else {
 		const src = [...MAPS, ...myMaps()].find((m) => m.id === from);
-		open({ ...src, id: '', name: `${src.name} (copy)`, author: '' }, true);
-		say(`A copy of ${src.name}. Rename it and save.`);
+		let d = { ...src, id: '', name: `${src.name} (copy)`, author: '' };
+		const W0 = d.rows[0].length, H0 = d.rows.length * 2 - 1;
+		if (W && (W !== W0 || H !== H0)) d = resized(d, W, H);
+		open(d, true);
+		const lost = W && checkMap(d).errors.length ? ' Some of it was cut off: the checks say what to fix.' : '';
+		say(W && (W !== W0 || H !== H0) ? `A copy of ${src.name} at ${W} × ${H} (it was ${W0} × ${H0}).${lost} Rename it and save.` : `A copy of ${src.name}. Rename it and save.`);
 	}
 	$('newMapDlg').close();
 });

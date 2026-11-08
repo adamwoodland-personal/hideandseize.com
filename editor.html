@@ -94,16 +94,19 @@
 
 <dialog id="newMapDlg" class="sheet" aria-labelledby="newMapTitle">
 	<h2 id="newMapTitle">New map</h2>
+	<p id="newDirty" class="warnText" hidden>This map has changes you haven't saved. Starting a new one drops them: Save first to keep them.</p>
 	<fieldset>
 		<legend>Start from</legend>
 		<div id="fromList" class="fromList"></div>
 	</fieldset>
-	<fieldset>
-		<legend>Size of a blank map</legend>
+	<fieldset class="sizes">
+		<legend>Size</legend>
+		<label id="sameSize"><input type="radio" name="size" value="same"> Its own size</label>
 		<label><input type="radio" name="size" value="17x27"> Small, 17 × 27</label>
 		<label><input type="radio" name="size" value="25x37" checked> Medium, 25 × 37</label>
 		<label><input type="radio" name="size" value="33x49"> Large, 33 × 49</label>
 		<label><input type="radio" name="size" value="45x61"> Huge, 45 × 61</label>
+		<p id="sizeNote" class="small" hidden>A copy at another size keeps the middle of the map: columns are added or cut at both sides, and rows at the back of each half.</p>
 	</fieldset>
 	<div class="row">
 		<button type="button" class="ghost close">Cancel</button>
@@ -128,7 +131,7 @@
 	<p>Pick a kind of ground, or the flag or a player, then click or drag on the map. The brush paints 1, 3×3 or 5×5 squares of ground at a time, round the flag and the players. Right-click clears a square back to grass, taking away a player or the flag there, and clicking a player that's already there takes it away too. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes, <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes.</p>
 	<p>You paint both halves at once: whatever you put on one half appears on the other, turned round (Red's half is Blue's turned 180°), so the two sides are always the same ground. The middle row is shared, so it mirrors left to right as well.</p>
 	<h3>What a map needs</h3>
-	<p>One flag with a square of room on every side (its eight neighbours are the base, so they can't be rocks or water), at least 3 rows back from the middle; between 1 and 12 players; and a way for every player to reach the other flag. The checks on the right say what's missing and give advice. Only maps with no problems can be played, but you can save one at any stage.</p>
+	<p>One flag with a square of room on every side (its eight neighbours are the base, so they can't be rocks or water), at least 3 rows back from the middle; between 1 and 12 players; and a way for every player to reach the other flag, and for it to be carried home from there. Rocks block the way; water can be waded, at 3 moves a square, and soaks whoever wades it. The checks on the right say what's missing and give advice. Only maps with no problems can be played, but you can save one at any stage.</p>
 	<p>The players you place are the team: put down as many Scouts, Runners, Shadows, Hunters and Guards as you like, up to 12. Red gets the same team, in the same places on its half.</p>
 	<h3>Saving and sharing</h3>
 	<p><b>Save</b> keeps the map in this browser, and saved maps that can be played appear under <b>Your maps</b> in the game's New game. <b>Play it</b> saves and opens the game with it picked.</p>

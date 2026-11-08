@@ -42,6 +42,8 @@ h1 .sub { color: var(--muted); font-weight: 600; font-size: 15px; margin-left: 6
 .fromList { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
 .fromList button { padding: 6px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .fromList button[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+.warnText { margin: 4px 0 0; padding: 8px 10px; border-radius: 8px; background: rgba(255, 215, 138, 0.12); border: 1px solid rgba(255, 215, 138, 0.5); color: #ffd78a; font-size: 13px; }
+.sizes label { display: inline-flex; align-items: center; gap: 6px; margin: 0 14px 6px 0; }
 .fromList canvas { width: 100%; height: auto; border-radius: 4px; image-rendering: pixelated; }
 code { background: var(--panel2); border-radius: 4px; padding: 0 4px; font-size: 12px; }
 @media (max-width: 1000px) {

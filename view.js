@@ -258,6 +258,7 @@ export class Board {
 		drawFigure(g, c.px, feet, t * 1.15, {
 			...u, pose, phase: a ? a.k * 2 : 0, facing: ui.facing?.[u.id] ?? (u.team === 'blue' ? 1 : -1),
 			flag: u.carrying ? R.other(u.team) : null, winded: s.winded?.[u.id] || 0, time: ui.now,
+			wading: !a && !!R.terrainAt(s, u.x, u.y).wet, soaked: R.soaked(u),
 			alpha: spent ? 0.55 : u.stance === 'hide' ? 0.85 : 1,
 		});
 		if (ui.ready && ui.ready.has(u.id)) { // a dot over players that still have something to do

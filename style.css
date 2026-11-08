@@ -108,6 +108,7 @@ main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1
 .traits .pips { display: flex; gap: 3px; }
 .traits .pips i { width: 14px; height: 6px; border-radius: 3px; background: #384356; }
 .traits .pips i.on { background: var(--gold); }
+.traits .pips i.wet { background: #4f8fd6; }
 .traits .val { color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
 .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .seg button { border: 0; border-radius: 0; background: transparent; padding: 7px 4px; }

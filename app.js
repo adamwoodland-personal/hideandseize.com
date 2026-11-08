@@ -217,13 +217,18 @@ function onTap(sq) {
 }
 async function doMove(u, path) {
 	ui.busy = true; ui.path = null; ui.armed = null;
-	refresh();
-	for (const j of path) {
-		const from = { x: u.x, y: u.y }, r = R.step(S, u, j);
-		face(u, from);
-		if (r.moved) await tween(u, from, { x: u.x, y: u.y }, STEP_MS.blue);
-		events(r.ev);
-		if (r.stop) break;
+	try {
+		refresh();
+		for (const j of path) {
+			const from = { x: u.x, y: u.y }, r = R.step(S, u, j);
+			face(u, from);
+			if (r.moved) await tween(u, from, { x: u.x, y: u.y }, STEP_MS.blue);
+			events(r.ev);
+			if (r.stop) break;
+		}
+	} catch (e) { // (an error never leaves the controls locked)
+		console.warn('A move stopped on an error:', e);
+		log('Something went wrong, so that move stopped there.');
 	}
 	ui.busy = false;
 	after(u);
@@ -231,10 +236,15 @@ async function doMove(u, path) {
 async function doTackle(a, b) {
 	if (!myTurn()) return;
 	ui.busy = true; ui.armed = null;
-	const ev = R.tackle(S, a, b);
-	events(ev);
-	refresh();
-	await sleep(700);
+	try {
+		const ev = R.tackle(S, a, b);
+		events(ev);
+		refresh();
+		await sleep(700);
+	} catch (e) {
+		console.warn('A tackle stopped on an error:', e);
+		log('Something went wrong, so that tackle stopped there.');
+	}
 	ui.busy = false;
 	after(a);
 }
@@ -267,43 +277,56 @@ function endTurn() {
 async function runRed() {
 	ui.busy = true;
 	ui.trails = []; // (Red's moves Blue sees leave a trail until Red's next turn)
-	refresh();
-	await sleep(350);
-	let guard = 0;
 	const game = S;
-	while (S && S === game && S.turn === 'red' && !S.winner && guard++ < 400) {
-		const act = aiStep(S, 'red', S.level);
-		if (act.type === 'none') break;
-		if (act.type === 'end') { events(R.endTurn(S)); break; }
-		const u = R.unitById(S, act.unit);
-		if (act.type === 'stance') { if (!R.setStance(S, u, act.stance)) S.aiDone.push(u.id); continue; }
-		if (act.type === 'move') {
-			let moved = false, shown = false;
-			for (const j of act.path) {
-				const seen0 = R.spotted(S, 'blue').has(u.id), from = { x: u.x, y: u.y }, r = R.step(S, u, j);
-				face(u, from);
-				moved ||= r.moved;
-				if (r.moved && (seen0 || R.spotted(S, 'blue').has(u.id))) {
-					shown = true;
-					ui.trails.push({ x0: from.x, y0: from.y, x1: u.x, y1: u.y, t0: performance.now() });
-					refresh();
-					await tween(u, from, { x: u.x, y: u.y }, redSpeed().step);
+	try {
+		refresh();
+		await sleep(350);
+		let guard = 0;
+		while (S && S === game && S.turn === 'red' && !S.winner && guard++ < 400) {
+			const act = aiStep(S, 'red', S.level);
+			if (act.type === 'none') break;
+			if (act.type === 'end') { events(R.endTurn(S)); break; }
+			const u = R.unitById(S, act.unit);
+			if (act.type === 'stance') { if (!R.setStance(S, u, act.stance)) S.aiDone.push(u.id); continue; }
+			if (act.type === 'move') {
+				let moved = false, shown = false;
+				for (const j of act.path) {
+					const seen0 = R.spotted(S, 'blue').has(u.id), from = { x: u.x, y: u.y }, r = R.step(S, u, j);
+					face(u, from);
+					moved ||= r.moved;
+					if (r.moved && (seen0 || R.spotted(S, 'blue').has(u.id))) {
+						shown = true;
+						ui.trails.push({ x0: from.x, y0: from.y, x1: u.x, y1: u.y, t0: performance.now() });
+						refresh();
+						await tween(u, from, { x: u.x, y: u.y }, redSpeed().step);
+					}
+					events(r.ev);
+					if (r.stop) break;
 				}
-				events(r.ev);
-				if (r.stop) break;
+				if (!moved) S.aiDone.push(u.id);
+				refresh();
+				if (shown) await sleep(redSpeed().pause);
 			}
-			if (!moved) S.aiDone.push(u.id);
-			refresh();
-			if (shown) await sleep(redSpeed().pause);
+			if (act.type === 'tackle') {
+				events(R.tackle(S, u, R.unitById(S, act.target)));
+				refresh();
+				await sleep(800);
+			}
+			if (S.mustEnd) { await sleep(1300); events(R.endTurn(S)); break; }
 		}
-		if (act.type === 'tackle') {
-			events(R.tackle(S, u, R.unitById(S, act.target)));
-			refresh();
-			await sleep(800);
+		if (S && S === game && S.turn === 'red' && !S.winner) events(R.endTurn(S)); // (a stuck computer never holds the game up)
+	} catch (e) {
+		// (and nor does an error: Red's turn ends there, or if even that can't be done, a new game is offered)
+		console.warn("Red's turn stopped on an error:", e);
+		try {
+			log("Something went wrong in Red's turn, so it ends here.");
+			if (S === game && S.turn === 'red' && !S.winner) events(R.endTurn(S));
+		} catch (e2) {
+			console.warn('The game could not go on, so a new one starts:', e2);
+			startOver();
+			return;
 		}
-		if (S.mustEnd) { await sleep(1300); events(R.endTurn(S)); break; }
 	}
-	if (S && S === game && S.turn === 'red' && !S.winner) events(R.endTurn(S)); // (a stuck computer never holds the game up)
 	ui.busy = false;
 	save();
 	if (S.winner) { refresh(); gameOver(); return; }
@@ -619,6 +642,15 @@ $('againBtn').addEventListener('click', () => { $('overDlg').close(); startGame(
 $('overNewBtn').addEventListener('click', () => { $('overDlg').close(); openNew(); });
 
 // ---- Start ----------------------------------------------------------------------------------------------------------------------
+// A fresh start, when there's no game to carry on with or the one there was can't go on.
+function startOver() {
+	store.del(SAVE);
+	S = null; ui.selected = null; ui.busy = false; ui.trails = []; tweens.clear();
+	$('log').replaceChildren();
+	if (MAPS.length) backdrop = R.newGame({ mapId: prefs.mapId, level: prefs.level, seed: 1 });
+	fit();
+	openNew();
+}
 {
 	const saved = store.get(SAVE);
 	let carried = false;
@@ -635,15 +667,9 @@ $('overNewBtn').addEventListener('click', () => { $('overDlg').close(); openNew(
 			if (S.turn === 'red') later(() => S.turn === 'red' && !ui.busy && runRed(), 600);
 		} catch (e) {
 			console.warn('The saved game could not be loaded, so a new one starts:', e);
-			S = null; ui.selected = null; $('log').replaceChildren();
 		}
 	}
-	if (!carried) {
-		store.del(SAVE);
-		if (MAPS.length) backdrop = R.newGame({ mapId: prefs.mapId, level: prefs.level, seed: 1 });
-		fit();
-		openNew();
-	}
+	if (!carried) startOver();
 	// From the map editor's Play button: #play=<map id> opens New game with that map picked.
 	const want = new URLSearchParams(location.hash.slice(1)).get('play');
 	if (want) {

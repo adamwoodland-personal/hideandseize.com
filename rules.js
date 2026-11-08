@@ -401,20 +401,22 @@ export function validState(s) {
 		if (s.W !== m.W || s.H !== m.H || s.mid !== m.mid || !Array.isArray(s.tiles) || s.tiles.length !== N || s.tiles.some((v, i) => v !== m.tiles[i])) return false;
 		if (!['blue', 'red'].includes(s.turn) || !(s.winner === null || ['blue', 'red', 'draw'].includes(s.winner))) return false;
 		if (!Number.isInteger(s.round) || s.round < 1 || !Number.isInteger(s.rng) || !Number.isInteger(s.seed) || !['blue', 'red'].includes(s.first)) return false;
-		if (typeof s.level !== 'string' || typeof s.mustEnd !== 'boolean' || (s.knownRev !== undefined && !Number.isInteger(s.knownRev))) return false;
+		if (typeof s.level !== 'string' || typeof s.mustEnd !== 'boolean' || !Number.isInteger(s.knownRev)) return false;
 		// The flags and starts must be the map's own.
 		for (const t of ['blue', 'red']) {
 			if (!same(s.flagHome?.[t], m.flags[t])) return false;
 			if (!Array.isArray(s.starts?.[t]) || s.starts[t].length !== m.starts[t].length || s.starts[t].some((p, k) => !same(p, m.starts[t][k]) || p.role !== m.starts[t][k].role)) return false;
 		}
-		// The bookkeeping objects: plain objects (or lists) of the right kind, if there at all.
+		// The bookkeeping, which every turn sets up afresh, so every save has it (the code relies on that): plain
+		// objects keyed by player, or a list of players, of the right kind. Only aiHold is made when first needed.
 		const ids = new Set(m.starts.blue.flatMap((_, k) => ['b' + k, 'r' + k]));
-		const table = (o, ok) => o === undefined || (plain(o) && Object.entries(o).every(([k, v]) => ids.has(k) && ok(v)));
-		if (!table(s.ambush, (v) => typeof v === 'boolean') || !table(s.bumped, (v) => v === 'blue' || v === 'red') || !table(s.aiCount, Number.isInteger)
-			|| !table(s.aiMoves, Number.isInteger) || !table(s.aiHold, Number.isInteger) || !table(s.trail, (v) => Array.isArray(v) && v.every((i) => Number.isInteger(i) && i >= 0 && i < N))
+		const table = (o, ok) => plain(o) && Object.entries(o).every(([k, v]) => ids.has(k) && ok(v));
+		if (!table(s.ambush, (v) => typeof v === 'boolean') || !table(s.bumped, (v) => v === 'blue' || v === 'red') || !table(s.winded, (v) => Number.isInteger(v) && v >= 1)
+			|| !table(s.aiCount, Number.isInteger) || !table(s.aiMoves, Number.isInteger) || !(s.aiHold === undefined || table(s.aiHold, Number.isInteger))
+			|| !table(s.trail, (v) => Array.isArray(v) && v.every((i) => Number.isInteger(i) && i >= 0 && i < N))
 			|| !table(s.aiPlan, (v) => plain(v) && Number.isInteger(v.i) && typeof v.carrying === 'boolean')
-			|| !(s.aiClaims === undefined || (plain(s.aiClaims) && Object.values(s.aiClaims).every((l) => Array.isArray(l) && l.every((c) => plain(c) && Number.isInteger(c.x) && Number.isInteger(c.y)))))
-			|| !(s.aiDone === undefined || (Array.isArray(s.aiDone) && s.aiDone.every((id) => ids.has(id))))) return false;
+			|| !table(s.aiClaims, (l) => Array.isArray(l) && l.every((c) => plain(c) && Number.isInteger(c.x) && Number.isInteger(c.y)))
+			|| !(Array.isArray(s.aiDone) && s.aiDone.every((id) => ids.has(id)))) return false;
 		for (const t of ['blue', 'red']) {
 			if (!Array.isArray(s.known?.[t]) || s.known[t].length !== N || s.known[t].some((v) => v !== 0 && v !== 1)) return false;
 			if (!Number.isInteger(s.score?.[t]) || s.score[t] < 0 || s.score[t] > RULES.winScore) return false;
@@ -425,7 +427,6 @@ export function validState(s) {
 			}
 		}
 		if (!Array.isArray(s.units) || s.units.length !== m.starts.blue.length * 2) return false;
-		if (s.winded && (typeof s.winded !== 'object' || Object.values(s.winded).some((v) => !Number.isInteger(v) || v < 1))) return false;
 		const taken = new Set();
 		for (const [k, u] of s.units.entries()) {
 			const slot = k % m.starts.blue.length, team = k < m.starts.blue.length ? 'blue' : 'red';

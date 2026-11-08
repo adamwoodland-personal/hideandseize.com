@@ -95,6 +95,14 @@ function refresh() {
 }
 const myTurn = () => S && S.turn === 'blue' && !S.winner && !ui.busy;
 const readyUnit = (u) => !u.off && !u.acted && (R.tackleTargets(S, u).length > 0 || (u.mp > 0 && R.destinations(S, u).size > 0));
+// The next of your players with something left to do, along the roster from player `from` (or back along it),
+// coming round from the end to the start, `from` itself last. With nobody picked, the first (or the last).
+function nextReady(from, back = false) {
+	const mine = S.units.filter((m) => m.team === 'blue'), n = mine.length, k0 = mine.findIndex((m) => m.id === from);
+	const at = k0 >= 0 ? k0 : back ? 0 : -1;
+	for (let k = 1; k <= n; k++) { const m = mine[(at + (back ? n - k : k) + n) % n]; if (readyUnit(m)) return m; }
+	return null;
+}
 
 function panel() {
 	$('scoreBlue').textContent = S.score.blue;
@@ -259,7 +267,7 @@ function after(u) {
 	if (S.winner) { refresh(); gameOver(); return; }
 	if (S.mustEnd) { refresh(); later(() => S.mustEnd && endTurn(), calm.matches ? 300 : 1400); return; }
 	if (u && !readyUnit(u)) {
-		const next = S.units.find((m) => m.team === 'blue' && readyUnit(m));
+		const next = nextReady(u.id);
 		ui.selected = next ? next.id : u.id;
 	}
 	refresh();
@@ -498,10 +506,9 @@ document.addEventListener('keydown', (e) => {
 	else if (k === '0') { board.fitAll(); kick(); }
 	else if (k.startsWith('arrow') && board.zoom > 1) { const d = 60; board.panBy(k === 'arrowleft' ? d : k === 'arrowright' ? -d : 0, k === 'arrowup' ? d : k === 'arrowdown' ? -d : 0); kick(); e.preventDefault(); }
 	else if (k === 'tab' && myTurn()) {
-		const ready = mine.filter(readyUnit);
-		if (!ready.length) return;
-		const at = ready.findIndex((u) => u.id === ui.selected);
-		select(ready[(at + (e.shiftKey ? ready.length - 1 : 1)) % ready.length].id, true);
+		const next = nextReady(ui.selected, e.shiftKey);
+		if (!next) return;
+		select(next.id, true);
 		e.preventDefault();
 	} else if (k === 'w') setStance('walk');
 	else if (k === 's') setStance('sneak');

@@ -114,15 +114,16 @@ export function reveal(s, team) {
 	if (changed) s.knownRev++;
 	return changed;
 }
-// What each team last saw of each enemy, for the faded markers and the computer's memory. A unit
-// sent off is forgotten by both sides (everyone hears a tackle).
+// What each team last saw of each enemy, for the faded markers and the computer's memory (with whose
+// turn it was, so the computer can tell how many turns the enemy has had since). A unit sent off is
+// forgotten by both sides (everyone hears a tackle).
 export function observe(s) {
 	for (const team of ['blue', 'red']) {
 		const seen = spotted(s, team), mem = s.lastSeen[team];
 		for (const b of s.units) {
 			if (b.team === team) continue;
 			if (b.off) delete mem[b.id];
-			else if (seen.has(b.id)) mem[b.id] = { x: b.x, y: b.y, round: s.round, carrying: b.carrying };
+			else if (seen.has(b.id)) mem[b.id] = { x: b.x, y: b.y, round: s.round, carrying: b.carrying, turn: s.turn };
 		}
 	}
 }

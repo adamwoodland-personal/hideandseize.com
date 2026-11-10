@@ -45,7 +45,7 @@
 			<button id="undoBtn" type="button" title="Undo (Ctrl+Z)">Undo</button>
 			<button id="redoBtn" type="button" title="Redo (Ctrl+Y)">Redo</button>
 		</div>
-		<p class="small">Paint on either half: the other half follows, turned round, so both sides always match. Ground paints round the flag and players; right-click clears a square to grass, taking away anything on it.</p>
+		<p class="small">Paint on either half: the other half follows, turned round, so both sides always match. Ground paints round the flag and players. To take a player away, pick <b>Remove</b> and click or drag over it, or right-click it (right-click clears any square to grass).</p>
 	</aside>
 
 	<section id="edWrap" aria-label="The map">
@@ -128,7 +128,7 @@
 <dialog id="edHelp" class="sheet" aria-labelledby="edHelpTitle">
 	<div class="sheetHead"><h2 id="edHelpTitle">Making a map</h2><button class="icon close" type="button" aria-label="Close">✕</button></div>
 	<h3>Painting</h3>
-	<p>Pick a kind of ground, or the flag or a player, then click or drag on the map. The brush paints 1, 3×3 or 5×5 squares of ground at a time, round the flag and the players. Right-click clears a square back to grass, taking away a player or the flag there, and clicking a player that's already there takes it away too. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes, <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes.</p>
+	<p>Pick a kind of ground, or the flag or a player, then click or drag on the map. The brush paints 1, 3×3 or 5×5 squares of ground at a time, round the flag and the players. Right-click clears a square back to grass, taking away a player or the flag there, and clicking a player that's already there takes it away too. <b>Remove</b> (<kbd>X</kbd>) takes away any player you click or drag over, leaving the ground as grass; the flag can only be moved, as a map needs one. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes, <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes.</p>
 	<p>You paint both halves at once: whatever you put on one half appears on the other, turned round (Red's half is Blue's turned 180°), so the two sides are always the same ground. The middle row is shared, so it mirrors left to right as well.</p>
 	<h3>What a map needs</h3>
 	<p>One flag with a square of room on every side (its eight neighbours are the base, so they can't be rocks or water), at least 3 rows back from the middle; between 1 and 12 players; and a way for every player to reach the other flag, and for it to be carried home from there. Rocks block the way; water can be waded, at 3 moves a square, and soaks whoever wades it. The checks on the right say what's missing and give advice. Only maps with no problems can be played, but you can save one at any stage.</p>

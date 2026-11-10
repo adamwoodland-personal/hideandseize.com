@@ -3,6 +3,7 @@ h1 .sub { color: var(--muted); font-weight: 600; font-size: 15px; margin-left: 6
 .ed { flex: 1; min-height: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr) 330px; }
 .tools, .props { background: var(--panel); overflow: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 .tools { border-right: 1px solid var(--line); }
+.tools > * { flex: none; } /* (scroll rather than squash the brush and buttons on short screens) */
 .props { border-left: 1px solid var(--line); }
 .tools h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 6px 0 0; }
 .toolGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -44,7 +45,7 @@ h1 .sub { color: var(--muted); font-weight: 600; font-size: 15px; margin-left: 6
 .fromList button[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
 .warnText { margin: 4px 0 0; padding: 8px 10px; border-radius: 8px; background: rgba(255, 215, 138, 0.12); border: 1px solid rgba(255, 215, 138, 0.5); color: #ffd78a; font-size: 13px; }
 .sizes label { display: inline-flex; align-items: center; gap: 6px; margin: 0 14px 6px 0; }
-.fromList canvas { width: 100%; height: auto; border-radius: 4px; image-rendering: pixelated; }
+.fromList canvas { width: 100%; height: auto; aspect-ratio: 25 / 37; object-fit: contain; border-radius: 4px; image-rendering: pixelated; } /* (every map in the same box, drawn to fit) */
 code { background: var(--panel2); border-radius: 4px; padding: 0 4px; font-size: 12px; }
 @media (max-width: 1000px) {
 	.ed { grid-template-columns: 180px minmax(0, 1fr) 280px; }

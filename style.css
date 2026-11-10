@@ -155,7 +155,8 @@ legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
 .maps { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
 .maps button { padding: 8px; display: flex; flex-direction: column; gap: 6px; text-align: left; background: var(--panel2); }
 .maps button[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
-.maps canvas { width: 100%; height: auto; border-radius: 6px; display: block; image-rendering: pixelated; }
+/* (every map in the same box, the built-in maps' shape, drawn to fit inside it: long or wide maps keep their shape) */
+.maps canvas { width: 100%; height: auto; aspect-ratio: 25 / 37; object-fit: contain; border-radius: 6px; display: block; image-rendering: pixelated; }
 .maps b { font-size: 14px; }
 .mapsHead { grid-column: 1 / -1; margin: 8px 0 0; font-weight: 700; color: var(--muted); }
 .maps span { font-size: 12px; color: var(--muted); line-height: 1.3; }

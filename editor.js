@@ -9,7 +9,8 @@ import { drawFigure, KIT } from './figures.js';
 const $ = (id) => document.getElementById(id);
 const DRAFT = 'hide-and-seize-editor-draft-v1';
 const GROUND = [['.', 'Grass'], [',', 'Long grass'], ['T', 'Woods'], ['^', 'Hill'], ['#', 'Rocks'], ['~', 'Water'], ['=', 'Bridge'], [':', 'Ford']];
-const PIECES = [['F', 'Flag'], ['s', 'Scout'], ['r', 'Runner'], ['d', 'Shadow'], ['h', 'Hunter'], ['g', 'Guard']];
+const REMOVE = 'x'; // (a tool only: no map letter)
+const PIECES = [['F', 'Flag'], ['s', 'Scout'], ['r', 'Runner'], ['d', 'Shadow'], ['h', 'Hunter'], ['g', 'Guard'], [REMOVE, 'Remove']];
 const NAME = Object.fromEntries([...GROUND, ...PIECES]);
 const store = {
 	get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
@@ -138,7 +139,8 @@ function drawFlag(q, team) {
 const toBlue = (x, y) => (y >= L.mid ? { x, y } : { x: L.W - 1 - x, y: L.H - 1 - y });
 // Paint at a square (either half). Ground uses the brush and goes round the flag and players; erasing
 // (right-click) clears a square to grass, piece and all. The flag and players take one square of a half
-// (never the middle row), never each other's: clicking a player that's already there takes it away.
+// (never the middle row), never each other's: clicking a player that's already there takes it away, and
+// the Remove tool takes away any player (not the flag, which only moves).
 function apply(sq, erase) {
 	const rows = def.rows.slice(), want = erase ? '.' : tool;
 	let changed = false;
@@ -150,7 +152,11 @@ function apply(sq, erase) {
 		if (i === 0) { const mx = L.W - 1 - bx; rows[0] = rows[0].slice(0, mx) + ch + rows[0].slice(mx + 1); }
 		changed = true;
 	};
-	if (want in CHAR) {
+	if (want === REMOVE) {
+		const b = toBlue(sq.x, sq.y), here = rows[b.y - L.mid][b.x];
+		if (ROLE_LETTER[here]) put(b.x, b.y, '.');
+		else if (here === 'F') say('The map needs its flag: to move it, pick Flag and click where it should go.');
+	} else if (want in CHAR) {
 		const k = Math.floor((erase ? 1 : brush) / 2);
 		for (let dy = -k; dy <= k; dy++) for (let dx = -k; dx <= k; dx++) {
 			const x = sq.x + dx, y = sq.y + dy;
@@ -198,7 +204,7 @@ function back(from, to) {
 		try { cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
 		const erase = e.button === 2;
 		remember();
-		stroke = { erase, changed: apply(sq, erase), last: key(sq), drag: erase || tool in CHAR };
+		stroke = { erase, changed: apply(sq, erase), last: key(sq), drag: erase || tool in CHAR || tool === REMOVE };
 		if (!stroke.drag) end();
 	});
 	cv.addEventListener('pointermove', (e) => {
@@ -216,7 +222,7 @@ function tipFor(sq) {
 	const tip = $('edTip');
 	if (!sq) { tip.hidden = true; return; }
 	const b = toBlue(sq.x, sq.y), i = b.y - L.mid, c = def.rows[i][b.x], half = sq.y === L.mid ? 'The middle row (shared)' : sq.y > L.mid ? `Blue's half, ${i} back from the middle` : `Red's half (a copy of Blue's), ${i} back`;
-	tip.textContent = `${half} · ${NAME[c] || c} · ${sq.x + 1} across`;
+	tip.textContent = `${half} · ${NAME[c] || c}${ROLE_LETTER[c] ? ' (Remove or right-click takes it away)' : ''} · ${sq.x + 1} across`;
 	tip.hidden = false;
 }
 
@@ -304,7 +310,7 @@ function toolButtons() {
 	const mk = (host, list, draw1) => {
 		for (const [c, name] of list) {
 			const b = document.createElement('button'), sw = document.createElement('canvas');
-			b.type = 'button'; b.dataset.t = c; b.title = `${name} (${c === 'F' ? 'F' : ROLE_LETTER[c] ? c.toUpperCase() : GROUND.findIndex(([k]) => k === c) + 1})`;
+			b.type = 'button'; b.dataset.t = c; b.title = `${name} (${c === 'F' || c === REMOVE || ROLE_LETTER[c] ? c.toUpperCase() : GROUND.findIndex(([k]) => k === c) + 1})`;
 			const dpr = Math.min(2, window.devicePixelRatio || 1);
 			sw.width = 22 * dpr; sw.height = 22 * dpr; sw.style.width = '22px'; sw.style.height = '22px';
 			const sg = sw.getContext('2d'); sg.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -317,7 +323,8 @@ function toolButtons() {
 	};
 	mk($('ground'), GROUND, (sg, c) => { const s = { W: 1, H: 1, tiles: [CHAR[c]] }; paintTile(sg, s, 0, 0, 0, 0, 22, false); });
 	mk($('pieces'), PIECES, (sg, c) => {
-		if (c === 'F') { sg.fillStyle = '#4b3a2a'; sg.fillRect(6, 3, 2, 17); sg.fillStyle = KIT.blue.main; sg.beginPath(); sg.moveTo(8, 3); sg.lineTo(19, 7); sg.lineTo(8, 11); sg.closePath(); sg.fill(); }
+		if (c === REMOVE) { sg.strokeStyle = '#ff8a80'; sg.lineWidth = 3; sg.lineCap = 'round'; sg.beginPath(); sg.moveTo(6, 6); sg.lineTo(16, 16); sg.moveTo(16, 6); sg.lineTo(6, 16); sg.stroke(); }
+		else if (c === 'F') { sg.fillStyle = '#4b3a2a'; sg.fillRect(6, 3, 2, 17); sg.fillStyle = KIT.blue.main; sg.beginPath(); sg.moveTo(8, 3); sg.lineTo(19, 7); sg.lineTo(8, 11); sg.closePath(); sg.fill(); }
 		else drawFigure(sg, 11, 21, 19, { role: ROLE_LETTER[c], team: 'blue', skin: 1, hair: 2, facing: 1, shadow: false });
 	});
 	for (const b of $('brush').querySelectorAll('button')) b.addEventListener('click', () => { brush = +b.dataset.b; mark(); });
@@ -338,6 +345,7 @@ document.addEventListener('keydown', (e) => {
 	if (e.ctrlKey || e.metaKey || e.altKey) return;
 	if (k >= '1' && k <= '8') { tool = GROUND[+k - 1][0]; mark(); }
 	else if (k === 'f') { tool = 'F'; mark(); }
+	else if (k === REMOVE) { tool = REMOVE; mark(); }
 	else if (ROLE_LETTER[k]) { tool = k; mark(); }
 	else if (k === '[' || k === ']') { brush = Math.max(1, Math.min(5, brush + (k === ']' ? 2 : -2))); mark(); }
 });

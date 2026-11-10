@@ -644,8 +644,9 @@ function gameOver() {
 	$('overText').textContent = S.winner === 'draw' ? `Nobody won in ${S.round - 1} rounds.`
 		: `${S.score.blue} to ${S.score.red}, in ${S.round} rounds. ${won ? 'Their flag is yours.' : 'Better luck next time.'}`;
 	const b = S.stats.blue, rd = S.stats.red;
+	const tackles = (t) => `${t.won} of ${t.tackles}${t.tackles ? ` (${Math.round((t.won / t.tackles) * 100)}%)` : ''}`;
 	$('overStats').innerHTML = `<dt></dt><dd><b>You</b></dd><dd><b>Red</b></dd>
-		<dt>Tackles won</dt><dd>${b.won} of ${b.tackles}</dd><dd>${rd.won} of ${rd.tackles}</dd>
+		<dt>Tackles won</dt><dd>${tackles(b)}</dd><dd>${tackles(rd)}</dd>
 		<dt>Flags grabbed</dt><dd>${b.grabs}</dd><dd>${rd.grabs}</dd>
 		<dt>On this map</dt><dd>won ${r.w}</dd><dd>lost ${r.l}</dd>`;
 	later(() => !$('overDlg').open && $('overDlg').showModal(), 900);

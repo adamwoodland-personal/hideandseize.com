@@ -15,7 +15,8 @@ const store = {
 	del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } },
 };
 const calm = matchMedia('(prefers-reduced-motion: reduce)');
-// How fast Red's moves play (per square, and the pause after each player's move that Blue sees).
+// How fast Red's turn plays out on screen (per square, and the pause after each player's move that Blue
+// sees): New game's "Show Red's turn". It changes only the animation, never how Red plays.
 const SPEEDS = { quick: { step: 70, pause: 0 }, normal: { step: 160, pause: 220 }, slow: { step: 280, pause: 500 } };
 const STEP_MS = { blue: 90 };
 const redSpeed = () => SPEEDS[prefs.speed] || SPEEDS.normal;
@@ -265,13 +266,16 @@ function setStance(st) {
 function after(u) {
 	save();
 	if (S.winner) { refresh(); gameOver(); return; }
-	if (S.mustEnd) { refresh(); later(() => S.mustEnd && endTurn(), calm.matches ? 300 : 1400); return; }
+	if (S.mustEnd) { endSoon(); return; }
 	if (u && !readyUnit(u)) {
 		const next = nextReady(u.id);
 		ui.selected = next ? next.id : u.id;
 	}
 	refresh();
 }
+// A point ends the scorer's turn, so the side that lost it moves first. That includes a point scored as
+// your turn begins (your carrier waiting in base when Red's carrier is sent off), so it ends by itself.
+function endSoon() { refresh(); later(() => S.mustEnd && endTurn(), calm.matches ? 300 : 1400); }
 function endTurn() {
 	if (!S || S.winner || S.turn !== 'blue' || (ui.busy && !S.mustEnd)) return;
 	ui.selected = null;
@@ -338,6 +342,7 @@ async function runRed() {
 	ui.busy = false;
 	save();
 	if (S.winner) { refresh(); gameOver(); return; }
+	if (S.mustEnd && S.turn === 'blue') { ui.selected = null; endSoon(); return; }
 	const first = S.units.find((m) => m.team === 'blue' && readyUnit(m));
 	ui.selected = first ? first.id : null;
 	refresh();
@@ -380,11 +385,11 @@ function events(list) {
 				log(e.team === 'blue' ? 'Your flag is back home.' : "Red's flag is back home.", e.team === 'blue' ? 'blue' : 'red');
 				break;
 			case 'score':
-				banner(e.team === 'blue' ? 'You score!' : 'Red scores', `${e.score.blue} to ${e.score.red}`, e.team);
+				banner(e.team === 'blue' ? 'You score!' : 'Red scores', `${e.score.blue} to ${e.score.red}${S.winner ? '' : e.team === 'blue' ? ' · Red moves first' : ' · You move first'}`, e.team);
 				log(e.team === 'blue' ? `You scored! ${e.score.blue}–${e.score.red}` : `Red scored. ${e.score.blue}–${e.score.red}`, e.team, true);
 				break;
 			case 'reset':
-				log('Everyone back to the start.');
+				log(e.next === 'red' ? 'Everyone back to the start. Red lost the point, so Red moves first.' : 'Everyone back to the start. You lost the point, so you move first.');
 				break;
 			case 'back':
 				if (u.team === 'blue') log(`${cap(who(u))} is back at your base.`, 'blue');
@@ -672,6 +677,7 @@ function startOver() {
 			refresh();
 			carried = true;
 			if (S.turn === 'red') later(() => S.turn === 'red' && !ui.busy && runRed(), 600);
+			else if (S.mustEnd) endSoon(); // (saved just after your point: Red still moves first)
 		} catch (e) {
 			console.warn('The saved game could not be loaded, so a new one starts:', e);
 		}

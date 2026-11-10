@@ -285,10 +285,12 @@ function checkScore(s, team, mover = null) {
 	Object.assign(s.flags[other(team)], { home: true, carrier: null });
 	const ev = [{ type: 'score', team, unit: c.id, score: { ...s.score } }];
 	if (s.score[team] >= RULES.winScore) { s.winner = team; ev.push({ type: 'win', team }); }
-	else { resetPositions(s); s.mustEnd = true; ev.push({ type: 'reset' }); }
+	else { resetPositions(s); s.mustEnd = true; ev.push({ type: 'reset', next: other(team) }); }
 	return ev;
 }
 // After a point everyone goes back to the start, both flags at home. Explored ground stays explored.
+// The scorer's turn ends there (mustEnd), so the side that lost the point moves first; the coin toss
+// (newGame's `first`) only decides the game's first turn.
 function resetPositions(s) {
 	for (const u of s.units) {
 		const p = s.starts[u.team][u.slot];

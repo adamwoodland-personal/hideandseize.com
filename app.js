@@ -37,6 +37,7 @@ const who = (u) => (u.team === 'blue' ? `${u.name} the ${roleName(u)}` : `Red's 
 const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const outText = (u) => (u.out === 0 ? 'back next turn' : `back in ${u.out + 1} turns`);
+const squareOf = (j) => ({ x: j % S.W, y: (j - (j % S.W)) / S.W });
 
 // ---- Drawing ------------------------------------------------------------------------------------------------------
 const tweens = new Set();
@@ -229,9 +230,8 @@ async function doMove(u, path) {
 	try {
 		refresh();
 		for (const j of path) {
-			const from = { x: u.x, y: u.y }, r = R.step(S, u, j);
-			face(u, from);
-			if (r.moved) await tween(u, from, { x: u.x, y: u.y }, STEP_MS.blue);
+			const from = { x: u.x, y: u.y }, r = R.step(S, u, j), to = squareOf(j);
+			if (r.moved) { face(u, from, to); await tween(u, from, to, STEP_MS.blue); }
 			events(r.ev);
 			if (r.stop) break;
 		}
@@ -303,14 +303,19 @@ async function runRed() {
 			if (act.type === 'move') {
 				let moved = false, shown = false;
 				for (const j of act.path) {
-					const seen0 = R.spotted(S, 'blue').has(u.id), from = { x: u.x, y: u.y }, r = R.step(S, u, j);
-					face(u, from);
+					const seen0 = R.spotted(S, 'blue').has(u.id), from = { x: u.x, y: u.y }, r = R.step(S, u, j), to = squareOf(j);
+					// A step that scores sends everyone back to the start inside step(), so u then stands on its
+					// start square: the step still ends on j, it is shown only if Blue saw the carrier just before,
+					// and nothing may be drawn towards where it now is (a trail to it gave its start away).
+					const reset = r.ev.some((e) => e.type === 'reset');
+					if (r.moved) face(u, from, to);
 					moved ||= r.moved;
-					if (r.moved && (seen0 || R.spotted(S, 'blue').has(u.id))) {
+					if (r.moved && (seen0 || (!reset && R.spotted(S, 'blue').has(u.id)))) {
 						shown = true;
-						ui.trails.push({ x0: from.x, y0: from.y, x1: u.x, y1: u.y, t0: performance.now() });
+						ui.trails.push({ x0: from.x, y0: from.y, x1: to.x, y1: to.y, t0: performance.now() });
 						refresh();
-						await tween(u, from, { x: u.x, y: u.y }, redSpeed().step);
+						if (reset) ui.visible.add(u.id); // (drawn for this last step only: the refresh below hides it again)
+						await tween(u, from, to, redSpeed().step);
 					}
 					events(r.ev);
 					if (r.stop) break;
@@ -389,6 +394,9 @@ function events(list) {
 				log(e.team === 'blue' ? `You scored! ${e.score.blue}–${e.score.red}` : `Red scored. ${e.score.blue}–${e.score.red}`, e.team, true);
 				break;
 			case 'reset':
+				// (Red's trails go with the point, as the faded last-seen markers do: every one of them now
+				// points at somewhere nobody is)
+				ui.trails = [];
 				log(e.next === 'red' ? 'Everyone back to the start. Red lost the point, so Red moves first.' : 'Everyone back to the start. You lost the point, so you move first.');
 				break;
 			case 'back':
@@ -496,8 +504,8 @@ $('zoomIn').addEventListener('click', () => zoomBy(1.25));
 $('zoomOut').addEventListener('click', () => zoomBy(1 / 1.25));
 $('zoomFit').addEventListener('click', () => { board.fitAll(); kick(); });
 // Which way a figure faces: the way it last moved across the screen.
-function face(u, from) {
-	const a = board.mid(S, from.x, from.y), b = board.mid(S, u.x, u.y);
+function face(u, from, to = u) {
+	const a = board.mid(S, from.x, from.y), b = board.mid(S, to.x, to.y);
 	if (Math.abs(b.px - a.px) > 0.5) ui.facing[u.id] = b.px > a.px ? 1 : -1;
 }
 $('endBtn').addEventListener('click', endTurn);
